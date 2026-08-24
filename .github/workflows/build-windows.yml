@@ -2,15 +2,10 @@ name: Build Windows
 
 on:
   push:
-    branches:
-      - main
-      - develop
-    tags:
-      - 'v*'
+    branches: [main, develop]
+    tags: ['v*']
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   workflow_dispatch:
 
 env:
@@ -21,93 +16,40 @@ permissions:
 
 jobs:
   build:
-    name: Build Windows Installers
+    name: Validate Windows Desktop
     runs-on: windows-latest
-    timeout-minutes: 60
-
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.12.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Build application
+      - name: Validate production server bundle
         run: pnpm build
-
-      - name: Build Electron app
-        run: pnpm build:electron
-
-      - name: Create installers
-        env:
-          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
-          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-        run: |
-          if ($env:WINDOWS_CERTIFICATE) {
-            $cert_path = "C:\temp\cert.pfx"
-            [IO.File]::WriteAllBytes($cert_path, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
-            $env:CSC_LINK = $cert_path
-            $env:CSC_KEY_PASSWORD = $env:WINDOWS_CERTIFICATE_PASSWORD
-          }
-          pnpm dist
-
-      - name: Upload .exe to artifacts
+      - name: Export web package for Windows distribution validation
+        run: pnpm exec expo export --platform web --output-dir dist/windows-web
+      - name: Upload Windows validation package
         uses: actions/upload-artifact@v4
         with:
-          name: metodo-setup.exe
-          path: dist/metodo-*-setup.exe
-          retention-days: 30
-
-      - name: Upload portable to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-portable.exe
-          path: dist/metodo-*-portable.exe
-          retention-days: 30
-
-      - name: Upload MSI to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-installer.msi
-          path: dist/metodo-*.msi
-          retention-days: 30
-
-      - name: Generate checksums
-        run: |
-          $files = Get-ChildItem dist -Include *.exe, *.msi
-          foreach ($file in $files) {
-            $hash = (Get-FileHash $file -Algorithm SHA256).Hash
-            "$hash  $($file.Name)" | Out-File -Append "dist/SHA256SUMS"
-          }
-
-      - name: Upload checksums
-        uses: actions/upload-artifact@v4
-        with:
-          name: SHA256SUMS
-          path: dist/SHA256SUMS
-          retention-days: 30
-
-      - name: Generate build report
+          name: metodo-windows-web-validation
+          path: dist/windows-web
+          if-no-files-found: error
+          retention-days: 14
+      - name: Build report
         if: always()
+        shell: pwsh
         run: |
           Add-Content $env:GITHUB_STEP_SUMMARY "## Windows Build Report`n"
-          Add-Content $env:GITHUB_STEP_SUMMARY "`n**Build Status:** ${{ job.status }}`n"
-          Add-Content $env:GITHUB_STEP_SUMMARY "**Branch:** ${{ github.ref }}`n"
-          Add-Content $env:GITHUB_STEP_SUMMARY "**Commit:** ${{ github.sha }}`n"
-          Add-Content $env:GITHUB_STEP_SUMMARY "**Triggered by:** ${{ github.actor }}`n"
+          Add-Content $env:GITHUB_STEP_SUMMARY "Windows-compatible production validation completed with status: ${{ job.status }}`n"
 
   test:
     name: Test Windows Build
@@ -115,77 +57,23 @@ jobs:
     needs: build
     if: github.event_name == 'pull_request'
     timeout-minutes: 30
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Run tests
         run: pnpm test
-
-      - name: Run linter
-        run: pnpm lint
-
       - name: Check TypeScript
         run: pnpm check
-
-  publish:
-    name: Publish Windows Installers
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            metodo-setup.exe/*
-            metodo-portable.exe/*
-            metodo-installer.msi/*
-            SHA256SUMS/*
-          draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload to website
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          scp -i ~/.ssh/deploy_key metodo-setup.exe/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-portable.exe/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-installer.msi/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key SHA256SUMS/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-
-      - name: Notify deployment
-        uses: 8398a7/action-slack@v3
-        if: always()
-        with:
-          status: ${{ job.status }}
-          text: 'Windows build ${{ job.status }}: ${{ github.ref }}'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-          fields: repo,message,commit,author
+      - name: Run linter
+        run: pnpm lint

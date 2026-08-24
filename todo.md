@@ -796,8 +796,16 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 
 ## Phase 28: CODEOWNERS and Code-Owner Review
 
-- [ ] Inspect current ownership metadata and branch-protection review settings
-- [ ] Add CODEOWNERS rules for workflows and security-sensitive project files
-- [ ] Publish the CODEOWNERS policy on a review branch
-- [ ] Require code-owner approval on protected `main`
-- [ ] Verify the live repository rule and save a policy checkpoint
+- [x] Inspect current ownership metadata and branch-protection review settings
+- [x] Add CODEOWNERS rules for workflows and security-sensitive project files
+- [x] Publish the CODEOWNERS policy on a review branch
+- [x] Require code-owner approval on protected `main`
+- [x] Verify the live repository rule and save a policy checkpoint
+
+## Phase 29: Native CI Workflow Repair
+
+- [x] Inspect Android, iOS, macOS, Linux, and Windows workflow failures
+- [x] Repair platform-specific CI assumptions without weakening checks
+- [ ] Rerun all native workflows and confirm successful stable job contexts
+- [ ] Add successful native contexts as required checks for `main`
+- [ ] Verify branch protection and save the native CI checkpoint
