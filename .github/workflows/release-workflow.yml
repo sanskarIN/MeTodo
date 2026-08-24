@@ -1,0 +1,344 @@
+name: Automated Release Workflow
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+      releaseChannel:
+        description: 'Release channel'
+        required: true
+        default: 'stable'
+        type: choice
+        options:
+          - stable
+          - beta
+          - alpha
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      releaseNotes: ${{ steps.notes.outputs.notes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${{ github.event.inputs.version }}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          CHANGELOG=$(git log --oneline --no-decorate $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~10")..HEAD || echo "Initial release")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          NOTES="Release ${{ steps.version.outputs.version }}\n\n"
+          NOTES+="## Changes\n"
+          NOTES+="${{ steps.changelog.outputs.changelog }}\n\n"
+          NOTES+="## Installation\n"
+          NOTES+="Download the appropriate package for your platform from the Releases page.\n\n"
+          NOTES+="## Support\n"
+          NOTES+="For issues or questions, please visit: https://github.com/sanskaryadav/metodo/issues"
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  build-android:
+    name: Build Android
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Android APK
+        run: bash scripts/build-android.sh --version ${{ needs.prepare-release.outputs.version }}
+
+      - name: Build Android AAB
+        run: bash scripts/build-android.sh --version ${{ needs.prepare-release.outputs.version }} --aab
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-android-apk
+          path: android/app/build/outputs/apk/release/*.apk
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-android-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+
+  build-windows:
+    name: Build Windows
+    needs: prepare-release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Windows EXE
+        run: bash scripts/build-windows.sh --version ${{ needs.prepare-release.outputs.version }}
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-windows-exe
+          path: dist/windows/*.exe
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-windows-msi
+          path: dist/windows/*.msi
+
+  build-linux:
+    name: Build Linux
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+          sudo apt-get update
+          sudo apt-get install -y libfuse-dev
+
+      - name: Build Linux AppImage
+        run: bash scripts/build-linux.sh --version ${{ needs.prepare-release.outputs.version }} --appimage
+
+      - name: Build Linux Snap
+        run: bash scripts/build-linux.sh --version ${{ needs.prepare-release.outputs.version }} --snap
+
+      - name: Build Linux Flatpak
+        run: bash scripts/build-linux.sh --version ${{ needs.prepare-release.outputs.version }} --flatpak
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-linux-appimage
+          path: dist/linux/*.AppImage
+
+      - name: Upload Snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-linux-snap
+          path: dist/linux/*.snap
+
+      - name: Upload Flatpak artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-linux-flatpak
+          path: dist/linux/*.flatpak
+
+  build-ios:
+    name: Build iOS
+    needs: prepare-release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build iOS IPA
+        run: bash scripts/build-ios.sh --version ${{ needs.prepare-release.outputs.version }}
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-ios-ipa
+          path: dist/ios/*.ipa
+
+  build-macos:
+    name: Build macOS
+    needs: prepare-release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build macOS DMG
+        run: bash scripts/build-macos.sh --version ${{ needs.prepare-release.outputs.version }}
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-macos-dmg
+          path: dist/macos/*.dmg
+
+  create-release:
+    name: Create Release
+    needs: [prepare-release, build-android, build-windows, build-linux, build-ios, build-macos]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Generate checksums
+        run: |
+          cd release-artifacts
+          find . -type f -exec sha256sum {} \; > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare-release.outputs.version }}
+          name: Release ${{ needs.prepare-release.outputs.version }}
+          body: ${{ needs.prepare-release.outputs.releaseNotes }}
+          files: |
+            release-artifacts/**/*
+            release-artifacts/SHA256SUMS
+          draft: false
+          prerelease: ${{ github.event.inputs.releaseChannel != 'stable' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-api:
+    name: Publish to Update API
+    needs: [prepare-release, create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Publish release to API
+        run: |
+          node scripts/publish-release.js \
+            --version ${{ needs.prepare-release.outputs.version }} \
+            --channel ${{ github.event.inputs.releaseChannel || 'stable' }} \
+            --notes "${{ needs.prepare-release.outputs.releaseNotes }}"
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+
+  notify-users:
+    name: Notify Users
+    needs: [prepare-release, publish-api]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification
+        run: |
+          echo "Sending release notification for version ${{ needs.prepare-release.outputs.version }}"
+          # Add notification logic here (email, push notifications, etc.)
+
+  cleanup:
+    name: Cleanup
+    needs: [prepare-release, create-release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Delete workflow artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: |
+            metodo-android-apk
+            metodo-android-aab
+            metodo-windows-exe
+            metodo-windows-msi
+            metodo-linux-appimage
+            metodo-linux-snap
+            metodo-linux-flatpak
+            metodo-ios-ipa
+            metodo-macos-dmg
