@@ -17,7 +17,7 @@ permissions:
 jobs:
   build:
     name: Build iOS Simulator
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 90
     steps:
       - name: Checkout code
@@ -57,7 +57,7 @@ jobs:
 
   test:
     name: Test iOS Build
-    runs-on: macos-14
+    runs-on: macos-15
     needs: build
     if: github.event_name == 'pull_request'
     timeout-minutes: 30
