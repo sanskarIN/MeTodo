@@ -762,3 +762,34 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Run final repository validation and push the complete code to the verified GitHub remote
 
 - [x] Redacted secret-shaped Slack webhook examples from publication documentation to satisfy GitHub push protection
+
+## Phase 24: Dependency and CI Security Hardening
+
+- [x] Review the 37 GitHub-reported dependency vulnerabilities and classify actionable upgrades
+- [x] Audit CI workflows and package configuration for security and reproducibility improvements
+- [x] Apply compatible dependency or workflow hardening without breaking Expo SDK 54
+- [x] Re-run TypeScript, Vitest, production bundle, and lint validation
+- [ ] Save a hardened release checkpoint and publish verified changes
+
+## Phase 25: Remaining Release Hardening
+
+- [x] Reassess unresolved transitive dependency advisories and safe upstream upgrade paths
+- [x] Harden GitHub Actions permissions and reproducibility without breaking release jobs
+- [x] Add repository security and branch-protection guidance
+- [x] Document native Android and iOS smoke-test requirements that cannot run in the sandbox
+- [x] Re-run application and workflow validation
+- [ ] Save a final remaining-work checkpoint and publish verified changes
+
+## Phase 26: Main Branch Protection
+
+- [x] Inspect current `main` branch protection and observed CI check names
+- [x] Apply least-privilege branch protection to `main` without guessing unavailable checks
+- [x] Verify the resulting GitHub rule and record the repository security change
+
+## Phase 27: CI Validation and Required Status Checks
+
+- [ ] Inspect workflow dispatch options and current protected-branch settings
+- [ ] Run the CI workflow and monitor every job to completion
+- [ ] Resolve any workflow failures and confirm a successful rerun
+- [ ] Add only successful stable CI jobs as required checks for `main`
+- [ ] Verify the protected branch and record the CI gate

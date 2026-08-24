@@ -28,6 +28,9 @@ env:
   JAVA_VERSION: '17'
   GRADLE_VERSION: '8.0'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Android APK/AAB
@@ -40,16 +43,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -197,11 +200,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
