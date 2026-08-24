@@ -41,7 +41,7 @@ jobs:
         working-directory: ios
         run: pod install
       - name: Build iOS simulator app
-        run: xcodebuild -workspace ios/metodo.xcworkspace -scheme metodo -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO -derivedDataPath ios/build build
+        run: xcodebuild -workspace ios/MeTodo.xcworkspace -scheme MeTodo -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO -derivedDataPath ios/build build
       - name: Upload iOS simulator app
         uses: actions/upload-artifact@v4
         with:
