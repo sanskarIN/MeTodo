@@ -1,0 +1,213 @@
+name: Build iOS
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '22.13.0'
+  XCODE_VERSION: '15.3'
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-14
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9.12.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+          cd ios && pod install && cd ..
+
+      - name: Setup provisioning profile
+        env:
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          PROVISIONING_PROFILE_UUID: ${{ secrets.IOS_PROVISIONING_PROFILE_UUID }}
+        run: |
+          if [ -n "$PROVISIONING_PROFILE_BASE64" ]; then
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            echo "$PROVISIONING_PROFILE_BASE64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/$PROVISIONING_PROFILE_UUID.mobileprovision
+          fi
+
+      - name: Setup signing certificate
+        env:
+          SIGNING_CERTIFICATE_BASE64: ${{ secrets.IOS_SIGNING_CERTIFICATE_BASE64 }}
+          SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.IOS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -n "$SIGNING_CERTIFICATE_BASE64" ]; then
+            CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+            echo "$SIGNING_CERTIFICATE_BASE64" | base64 -d > $CERTIFICATE_PATH
+            security create-keychain -p "$SIGNING_CERTIFICATE_PASSWORD" build.keychain
+            security default-keychain -s build.keychain
+            security unlock-keychain -p "$SIGNING_CERTIFICATE_PASSWORD" build.keychain
+            security import $CERTIFICATE_PATH -k build.keychain -P "$SIGNING_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$SIGNING_CERTIFICATE_PASSWORD" build.keychain
+          fi
+
+      - name: Build iOS app (Debug)
+        if: github.event_name == 'pull_request'
+        run: |
+          cd ios
+          xcodebuild -workspace metodo.xcworkspace \
+            -scheme metodo \
+            -configuration Debug \
+            -derivedDataPath build \
+            -archivePath build/metodo.xcarchive \
+            archive
+
+      - name: Build iOS app (Release)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd ios
+          xcodebuild -workspace metodo.xcworkspace \
+            -scheme metodo \
+            -configuration Release \
+            -derivedDataPath build \
+            -archivePath build/metodo.xcarchive \
+            archive
+
+      - name: Export IPA
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd ios
+          xcodebuild -exportArchive \
+            -archivePath build/metodo.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath build/ipa
+
+      - name: Upload IPA to artifacts
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo.ipa
+          path: ios/build/ipa/metodo.ipa
+          retention-days: 90
+
+      - name: Generate build report
+        if: always()
+        run: |
+          echo "## iOS Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+  test:
+    name: Test iOS Build
+    runs-on: macos-14
+    needs: build
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9.12.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Run linter
+        run: pnpm lint
+
+      - name: Check TypeScript
+        run: pnpm check
+
+  publish:
+    name: Publish to App Store
+    runs-on: macos-14
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download IPA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: metodo.ipa
+
+      - name: Setup App Store Connect credentials
+        env:
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8
+
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app \
+            -f metodo.ipa \
+            -t ios \
+            -u ${{ secrets.APP_STORE_CONNECT_USERNAME }} \
+            -p ${{ secrets.APP_STORE_CONNECT_PASSWORD }} \
+            --output-format xml
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: metodo.ipa
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: 'iOS build ${{ job.status }}: ${{ github.ref }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author
