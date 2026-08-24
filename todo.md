@@ -619,8 +619,8 @@
 - [x] Run production server bundling and inspect generated artifacts
 - [x] Run lint validation and resolve actionable findings
 - [x] Verify the final changed-file inventory and documentation references
-- [ ] Save the final integrated project checkpoint
-- [ ] Deliver the final project version and validation artifacts
+- [x] Save the final integrated project checkpoint
+- [x] Deliver the final project version and validation artifacts
 
 ## Validation Record
 
