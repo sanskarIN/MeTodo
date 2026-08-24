@@ -788,8 +788,16 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 
 ## Phase 27: CI Validation and Required Status Checks
 
-- [ ] Inspect workflow dispatch options and current protected-branch settings
-- [ ] Run the CI workflow and monitor every job to completion
+- [x] Inspect workflow dispatch options and current protected-branch settings
+- [x] Run the CI workflow and monitor every job to completion
 - [ ] Resolve any workflow failures and confirm a successful rerun
-- [ ] Add only successful stable CI jobs as required checks for `main`
-- [ ] Verify the protected branch and record the CI gate
+- [x] Add only successful stable CI jobs as required checks for `main`
+- [x] Verify the protected branch and record the CI gate
+
+## Phase 28: CODEOWNERS and Code-Owner Review
+
+- [ ] Inspect current ownership metadata and branch-protection review settings
+- [ ] Add CODEOWNERS rules for workflows and security-sensitive project files
+- [ ] Publish the CODEOWNERS policy on a review branch
+- [ ] Require code-owner approval on protected `main`
+- [ ] Verify the live repository rule and save a policy checkpoint
