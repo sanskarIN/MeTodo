@@ -115,7 +115,7 @@ Start here if you want to contribute:
 | [REPORT_ERROR.md](REPORT_ERROR.md) | Error reporting guide |
 | [FEATURE_REQUEST.md](FEATURE_REQUEST.md) | Feature request guide |
 
-### Audit and Analysis Reports (7 files)
+### Audit and Analysis Reports (9 files)
 
 | File | Purpose |
 |------|---------|
@@ -126,6 +126,9 @@ Start here if you want to contribute:
 | [DATABASE_SCHEMA_VERIFICATION_REPORT.md](DATABASE_SCHEMA_VERIFICATION_REPORT.md) | Verification of database schema and ORM |
 | [COMPONENT_IMPLEMENTATION_REVIEW_REPORT.md](COMPONENT_IMPLEMENTATION_REVIEW_REPORT.md) | Review of all component implementations |
 | [SECURITY_PERFORMANCE_ANALYSIS_REPORT.md](SECURITY_PERFORMANCE_ANALYSIS_REPORT.md) | Analysis of security and performance |
+| [DEPENDENCY_SECURITY_REVIEW.md](DEPENDENCY_SECURITY_REVIEW.md) | Dependency audit, direct upgrades, and transitive-risk treatment |
+| [GITHUB_SECURITY_HARDENING.md](GITHUB_SECURITY_HARDENING.md) | GitHub Actions permissions, branch protection, and native smoke-test guidance |
+| [EAS_RELEASE_READINESS.md](EAS_RELEASE_READINESS.md) | Credential-free EAS profiles and owner-controlled production-signing handoff |
 
 ### Other (5 files)
 
