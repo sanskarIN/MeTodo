@@ -9,6 +9,12 @@ export interface TaskCalendarEventData {
   alarms: Array<{ relativeOffset: number }>;
 }
 
+export interface WritableCalendarOption {
+  id: string;
+  title: string;
+  color?: string | null;
+}
+
 const CALENDAR_START_HOUR = 9;
 const CALENDAR_EVENT_DURATION_MINUTES = 60;
 const CALENDAR_ALARM_OFFSET_MINUTES = -30;
@@ -29,6 +35,17 @@ function dateAtLocalTime(date: Date, hour: number, minute: number): Date {
 
 export function hasTaskCalendarLink(task: Pick<Task, "calendarEvent">): boolean {
   return Boolean(task.calendarEvent?.eventId && task.calendarEvent.calendarId);
+}
+
+export function findWritableCalendarOption(
+  calendars: WritableCalendarOption[],
+  preferredCalendarId: string | null | undefined,
+): WritableCalendarOption | null {
+  if (!preferredCalendarId) {
+    return null;
+  }
+
+  return calendars.find((calendar) => calendar.id === preferredCalendarId) ?? null;
 }
 
 export function createTaskCalendarEventData(
