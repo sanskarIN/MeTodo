@@ -36,6 +36,7 @@ interface TaskContextType {
   avatar: AvatarCustomization | null;
   addTask: (task: Task) => Promise<void>;
   updateTask: (task: Task) => Promise<void>;
+  updateTasks: (tasks: Task[]) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   addCategory: (category: Category) => Promise<void>;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -126,6 +127,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem("metodo_tasks", JSON.stringify(updatedTasks));
     } catch (error) {
       console.error("Error updating task:", error);
+    }
+  };
+
+  const updateTasks = async (nextTasks: Task[]) => {
+    try {
+      setTasks(nextTasks);
+      await AsyncStorage.setItem("metodo_tasks", JSON.stringify(nextTasks));
+    } catch (error) {
+      console.error("Error updating tasks:", error);
     }
   };
 
@@ -233,6 +243,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         avatar,
         addTask,
         updateTask,
+        updateTasks,
         deleteTask,
         addCategory,
         updateSettings,
