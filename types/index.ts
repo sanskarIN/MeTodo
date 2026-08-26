@@ -14,6 +14,13 @@ export interface Reminder {
   type: "notification" | "email";
 }
 
+export interface TaskCalendarLink {
+  eventId: string;
+  calendarId: string;
+  linkedAt: Date;
+  lastSyncedAt: Date;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -30,6 +37,7 @@ export interface Task {
     endDate?: Date;
     customPattern?: string;
   };
+  calendarEvent?: TaskCalendarLink;
   richNotes: string;
   createdAt: Date;
   updatedAt: Date;

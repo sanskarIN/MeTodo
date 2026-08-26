@@ -815,4 +815,12 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Inspect pull-request approvals, mergeability, and required owner actions
 - [x] Prepare credential-free release delivery improvements without bypassing protected-branch safeguards
 - [x] Validate and publish review-ready platform-delivery changes
-- [ ] Save a release-readiness checkpoint and document the required owner merge action
+- [x] Save a release-readiness checkpoint and document the required owner merge action
+
+## Phase 31: Device Calendar Integration
+
+- [x] Inspect task deadline data and define calendar event behavior
+- [x] Add compatible calendar dependency, permissions, and platform fallback behavior
+- [x] Implement task-to-calendar create, update, and unlink controls
+- [x] Add focused tests and validate Android, iOS, and web-safe behavior
+- [ ] Save a calendar integration checkpoint and publish review-ready changes

@@ -129,6 +129,7 @@ Start here if you want to contribute:
 | [DEPENDENCY_SECURITY_REVIEW.md](DEPENDENCY_SECURITY_REVIEW.md) | Dependency audit, direct upgrades, and transitive-risk treatment |
 | [GITHUB_SECURITY_HARDENING.md](GITHUB_SECURITY_HARDENING.md) | GitHub Actions permissions, branch protection, and native smoke-test guidance |
 | [EAS_RELEASE_READINESS.md](EAS_RELEASE_READINESS.md) | Credential-free EAS profiles and owner-controlled production-signing handoff |
+| [DEVICE_CALENDAR_INTEGRATION.md](DEVICE_CALENDAR_INTEGRATION.md) | Explicit Android/iOS task deadline linking with privacy-safe fallback behavior |
 
 ### Other (5 files)
 
