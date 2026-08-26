@@ -2,184 +2,56 @@ name: Build Android
 
 on:
   push:
-    branches:
-      - main
-      - develop
-    tags:
-      - 'v*'
+    branches: [main, develop]
+    tags: ['v*']
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   workflow_dispatch:
-    inputs:
-      release_type:
-        description: 'Release type'
-        required: true
-        default: 'beta'
-        type: choice
-        options:
-          - alpha
-          - beta
-          - stable
 
 env:
   NODE_VERSION: '22.13.0'
-  JAVA_VERSION: '17'
-  GRADLE_VERSION: '8.0'
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    name: Build Android APK/AAB
+    name: Build Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'gradle'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          ndk-version: '26.1.10909125'
-          build-tools-version: '34.0.0'
-
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Setup Expo
-        run: pnpm add -g eas-cli
-
-      - name: Create keystore
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
-          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
-          echo "KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=$KEY_PASSWORD" >> $GITHUB_ENV
-
-      - name: Build APK (Debug)
-        if: github.event_name == 'pull_request'
-        run: |
-          cd android
-          ./gradlew assembleDebug --stacktrace
-
-      - name: Build AAB (Release)
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          cd android
-          ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=app/release.keystore \
-            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
-            --stacktrace
-
-      - name: Upload APK to artifacts
-        if: github.event_name == 'pull_request'
+      - name: Generate Android native project
+        run: pnpm exec expo prebuild --platform android --no-install --non-interactive
+      - name: Build unsigned debug APK
+        working-directory: android
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: metodo-debug.apk
+          name: metodo-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
-
-      - name: Upload AAB to artifacts
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-release.aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 90
-
-      - name: Generate build report
+          if-no-files-found: error
+          retention-days: 14
+      - name: Build report
         if: always()
         run: |
-          echo "## Android Build Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-
-  publish:
-    name: Publish to Google Play Store
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download AAB artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: metodo-release.aab
-
-      - name: Setup Google Play credentials
-        env:
-          GOOGLE_PLAY_JSON: ${{ secrets.GOOGLE_PLAY_JSON }}
-        run: |
-          echo "$GOOGLE_PLAY_JSON" > /tmp/google-play-key.json
-
-      - name: Publish to Google Play Store
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_JSON }}
-          packageName: space.manus.metodo
-          releaseFiles: 'metodo-release.aab'
-          track: internal
-          status: draft
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: metodo-release.aab
-          draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Notify deployment
-        uses: 8398a7/action-slack@v3
-        if: always()
-        with:
-          status: ${{ job.status }}
-          text: 'Android build ${{ job.status }}: ${{ github.ref }}'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-          fields: repo,message,commit,author
+          echo "## Android Build Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "Unsigned debug APK build completed with status: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
 
   test:
     name: Test Android Build
@@ -187,37 +59,23 @@ jobs:
     needs: build
     if: github.event_name == 'pull_request'
     timeout-minutes: 30
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
-
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Run tests
         run: pnpm test
-
-      - name: Run linter
-        run: pnpm lint
-
       - name: Check TypeScript
         run: pnpm check
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/coverage-final.json
-          flags: android
-          name: android-coverage
+      - name: Run linter
+        run: pnpm lint

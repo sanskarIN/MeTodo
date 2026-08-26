@@ -1,0 +1,138 @@
+import type { Task } from "@/types";
+
+export interface TaskCalendarEventData {
+  title: string;
+  startDate: Date;
+  endDate: Date;
+  timeZone: string;
+  notes: string;
+  alarms: Array<{ relativeOffset: number }>;
+}
+
+export interface WritableCalendarOption {
+  id: string;
+  title: string;
+  color?: string | null;
+}
+
+export type TaskCalendarIneligibilityReason = "already_linked" | "missing_due_date" | "invalid_due_date";
+
+export interface TaskCalendarIneligibleTask {
+  taskId: string;
+  taskTitle: string;
+  reason: TaskCalendarIneligibilityReason;
+  message: string;
+}
+
+export interface TaskCalendarBulkEligibility {
+  eligibleTasks: Task[];
+  ineligibleTasks: TaskCalendarIneligibleTask[];
+}
+
+const CALENDAR_START_HOUR = 9;
+const CALENDAR_EVENT_DURATION_MINUTES = 60;
+const CALENDAR_ALARM_OFFSET_MINUTES = -30;
+
+function getDeviceTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
+function dateAtLocalTime(date: Date, hour: number, minute: number): Date {
+  const nextDate = new Date(date);
+  nextDate.setHours(hour, minute, 0, 0);
+  return nextDate;
+}
+
+export function hasTaskCalendarLink(task: Pick<Task, "calendarEvent">): boolean {
+  return Boolean(task.calendarEvent?.eventId && task.calendarEvent.calendarId);
+}
+
+export function findWritableCalendarOption(
+  calendars: WritableCalendarOption[],
+  preferredCalendarId: string | null | undefined,
+): WritableCalendarOption | null {
+  if (!preferredCalendarId) {
+    return null;
+  }
+
+  return calendars.find((calendar) => calendar.id === preferredCalendarId) ?? null;
+}
+
+export function getTaskCalendarBulkEligibility(tasks: Task[]): TaskCalendarBulkEligibility {
+  const eligibleTasks: Task[] = [];
+  const ineligibleTasks: TaskCalendarIneligibleTask[] = [];
+
+  for (const task of tasks) {
+    if (hasTaskCalendarLink(task)) {
+      ineligibleTasks.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "already_linked",
+        message: "Already linked to a device calendar event.",
+      });
+      continue;
+    }
+
+    if (!task.dueDate) {
+      ineligibleTasks.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "missing_due_date",
+        message: "Skipped because the task has no due date.",
+      });
+      continue;
+    }
+
+    if (Number.isNaN(new Date(task.dueDate).getTime())) {
+      ineligibleTasks.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "invalid_due_date",
+        message: "Skipped because the task due date is invalid.",
+      });
+      continue;
+    }
+
+    eligibleTasks.push(task);
+  }
+
+  return { eligibleTasks, ineligibleTasks };
+}
+
+export function createTaskCalendarEventData(
+  task: Pick<Task, "id" | "title" | "description" | "dueDate" | "priority" | "category">,
+): TaskCalendarEventData | null {
+  if (!task.dueDate) {
+    return null;
+  }
+
+  const dueDate = new Date(task.dueDate);
+  if (Number.isNaN(dueDate.getTime())) {
+    return null;
+  }
+
+  const startDate = dateAtLocalTime(dueDate, CALENDAR_START_HOUR, 0);
+  const endDate = new Date(startDate.getTime() + CALENDAR_EVENT_DURATION_MINUTES * 60 * 1000);
+  const description = task.description.trim();
+
+  return {
+    title: task.title.trim() || "MeTodo task",
+    startDate,
+    endDate,
+    timeZone: getDeviceTimeZone(),
+    notes: [
+      "Created by MeTodo",
+      `Task ID: ${task.id}`,
+      `Priority: ${task.priority}`,
+      task.category ? `Category: ${task.category}` : null,
+      description || null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    alarms: [{ relativeOffset: CALENDAR_ALARM_OFFSET_MINUTES }],
+  };
+}

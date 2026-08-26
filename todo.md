@@ -762,3 +762,81 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Run final repository validation and push the complete code to the verified GitHub remote
 
 - [x] Redacted secret-shaped Slack webhook examples from publication documentation to satisfy GitHub push protection
+
+## Phase 24: Dependency and CI Security Hardening
+
+- [x] Review the 37 GitHub-reported dependency vulnerabilities and classify actionable upgrades
+- [x] Audit CI workflows and package configuration for security and reproducibility improvements
+- [x] Apply compatible dependency or workflow hardening without breaking Expo SDK 54
+- [x] Re-run TypeScript, Vitest, production bundle, and lint validation
+- [ ] Save a hardened release checkpoint and publish verified changes
+
+## Phase 25: Remaining Release Hardening
+
+- [x] Reassess unresolved transitive dependency advisories and safe upstream upgrade paths
+- [x] Harden GitHub Actions permissions and reproducibility without breaking release jobs
+- [x] Add repository security and branch-protection guidance
+- [x] Document native Android and iOS smoke-test requirements that cannot run in the sandbox
+- [x] Re-run application and workflow validation
+- [ ] Save a final remaining-work checkpoint and publish verified changes
+
+## Phase 26: Main Branch Protection
+
+- [x] Inspect current `main` branch protection and observed CI check names
+- [x] Apply least-privilege branch protection to `main` without guessing unavailable checks
+- [x] Verify the resulting GitHub rule and record the repository security change
+
+## Phase 27: CI Validation and Required Status Checks
+
+- [x] Inspect workflow dispatch options and current protected-branch settings
+- [x] Run the CI workflow and monitor every job to completion
+- [ ] Resolve any workflow failures and confirm a successful rerun
+- [x] Add only successful stable CI jobs as required checks for `main`
+- [x] Verify the protected branch and record the CI gate
+
+## Phase 28: CODEOWNERS and Code-Owner Review
+
+- [x] Inspect current ownership metadata and branch-protection review settings
+- [x] Add CODEOWNERS rules for workflows and security-sensitive project files
+- [x] Publish the CODEOWNERS policy on a review branch
+- [x] Require code-owner approval on protected `main`
+- [x] Verify the live repository rule and save a policy checkpoint
+
+## Phase 29: Native CI Workflow Repair
+
+- [x] Inspect Android, iOS, macOS, Linux, and Windows workflow failures
+- [x] Repair platform-specific CI assumptions without weakening checks
+- [x] Rerun all native workflows and confirm successful stable job contexts
+- [x] Add successful native contexts as required checks for `main`
+- [x] Verify branch protection and save the native CI checkpoint
+
+## Phase 30: Protected Release Readiness
+
+- [x] Inspect pull-request approvals, mergeability, and required owner actions
+- [x] Prepare credential-free release delivery improvements without bypassing protected-branch safeguards
+- [x] Validate and publish review-ready platform-delivery changes
+- [x] Save a release-readiness checkpoint and document the required owner merge action
+
+## Phase 31: Device Calendar Integration
+
+- [x] Inspect task deadline data and define calendar event behavior
+- [x] Add compatible calendar dependency, permissions, and platform fallback behavior
+- [x] Implement task-to-calendar create, update, and unlink controls
+- [x] Add focused tests and validate Android, iOS, and web-safe behavior
+- [x] Save a calendar integration checkpoint and publish review-ready changes
+
+## Phase 32: Calendar Selection
+
+- [x] Inspect existing task calendar links and selection-state patterns
+- [x] Add a native writable-calendar picker before task-event creation
+- [x] Persist the user’s preferred writable calendar for subsequent task links
+- [x] Add deterministic selection tests and validate platform fallbacks
+- [x] Save a calendar-selection checkpoint and publish review-ready changes
+
+## Phase 33: Bulk Device Calendar Linking
+
+- [x] Define eligible task rules and bulk-link result reporting
+- [x] Add an explicit native writable-calendar chooser for eligible task batches
+- [x] Persist successful calendar links without overwriting existing task links
+- [x] Add focused tests, documentation, and platform-safe validation
+- [x] Save a bulk-linking checkpoint and publish review-ready changes

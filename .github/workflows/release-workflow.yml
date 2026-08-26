@@ -23,6 +23,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+permissions:
+  contents: read
+
 jobs:
   prepare-release:
     name: Prepare Release
@@ -78,6 +81,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -91,7 +99,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build Android APK
         run: bash scripts/build-android.sh --version ${{ needs.prepare-release.outputs.version }}
@@ -126,7 +134,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build Windows EXE
         run: bash scripts/build-windows.sh --version ${{ needs.prepare-release.outputs.version }}
@@ -159,7 +167,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install
+          pnpm install --frozen-lockfile
           sudo apt-get update
           sudo apt-get install -y libfuse-dev
 
@@ -210,7 +218,7 @@ jobs:
           xcode-version: latest-stable
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build iOS IPA
         run: bash scripts/build-ios.sh --version ${{ needs.prepare-release.outputs.version }}
@@ -241,7 +249,7 @@ jobs:
           xcode-version: latest-stable
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build macOS DMG
         run: bash scripts/build-macos.sh --version ${{ needs.prepare-release.outputs.version }}
@@ -253,6 +261,9 @@ jobs:
           path: dist/macos/*.dmg
 
   create-release:
+    permissions:
+      contents: write
+      actions: read
     name: Create Release
     needs: [prepare-release, build-android, build-windows, build-linux, build-ios, build-macos]
     runs-on: ubuntu-latest
@@ -301,7 +312,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Publish release to API
         run: |
@@ -324,6 +335,8 @@ jobs:
           # Add notification logic here (email, push notifications, etc.)
 
   cleanup:
+    permissions:
+      actions: write
     name: Cleanup
     needs: [prepare-release, create-release]
     runs-on: ubuntu-latest

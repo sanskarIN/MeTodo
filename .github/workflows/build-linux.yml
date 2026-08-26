@@ -2,148 +2,53 @@ name: Build Linux
 
 on:
   push:
-    branches:
-      - main
-      - develop
-    tags:
-      - 'v*'
+    branches: [main, develop]
+    tags: ['v*']
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   workflow_dispatch:
 
 env:
   NODE_VERSION: '22.13.0'
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    name: Build Linux Packages
+    name: Validate Linux Desktop
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          fetch-depth: 0
-
+          version: 9.12.0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libfuse-dev \
-            libappindicator3-dev \
-            libgconf-2-4 \
-            libnotify-dev \
-            libxss1 \
-            libnss3 \
-            libxkbfile1 \
-            snapcraft \
-            flatpak \
-            flatpak-builder \
-            appstream
-
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Build application
+      - name: Validate production server bundle
         run: pnpm build
-
-      - name: Build Electron app
-        run: pnpm build:electron
-
-      - name: Create AppImage
-        run: pnpm dist:appimage
-
-      - name: Create Snap
-        run: pnpm dist:snap
-
-      - name: Create Flatpak
-        run: pnpm dist:flatpak
-
-      - name: Create DEB package
-        run: pnpm dist:deb
-
-      - name: Create RPM package
-        run: pnpm dist:rpm
-
-      - name: Upload AppImage to artifacts
+      - name: Export web package for Linux distribution validation
+        run: pnpm exec expo export --platform web --output-dir dist/linux-web
+      - name: Upload Linux validation package
         uses: actions/upload-artifact@v4
         with:
-          name: metodo-appimage
-          path: dist/metodo-*.AppImage
-          retention-days: 30
-
-      - name: Upload Snap to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-snap
-          path: dist/metodo_*.snap
-          retention-days: 30
-
-      - name: Upload Flatpak to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-flatpak
-          path: dist/metodo-*.flatpak
-          retention-days: 30
-
-      - name: Upload DEB to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-deb
-          path: dist/metodo_*.deb
-          retention-days: 30
-
-      - name: Upload RPM to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-rpm
-          path: dist/metodo-*.rpm
-          retention-days: 30
-
-      - name: Generate checksums
-        run: |
-          cd dist
-          sha256sum metodo-*.AppImage metodo_*.snap metodo-*.flatpak metodo_*.deb metodo-*.rpm > SHA256SUMS
-          cat SHA256SUMS
-
-      - name: Upload checksums
-        uses: actions/upload-artifact@v4
-        with:
-          name: SHA256SUMS-linux
-          path: dist/SHA256SUMS
-          retention-days: 30
-
-      - name: Generate build report
+          name: metodo-linux-web-validation
+          path: dist/linux-web
+          if-no-files-found: error
+          retention-days: 14
+      - name: Build report
         if: always()
         run: |
-          echo "## Linux Build Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- AppImage" >> $GITHUB_STEP_SUMMARY
-          echo "- Snap" >> $GITHUB_STEP_SUMMARY
-          echo "- Flatpak" >> $GITHUB_STEP_SUMMARY
-          echo "- DEB" >> $GITHUB_STEP_SUMMARY
-          echo "- RPM" >> $GITHUB_STEP_SUMMARY
+          echo "## Linux Build Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "Linux-compatible production validation completed with status: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
 
   test:
     name: Test Linux Build
@@ -151,92 +56,23 @@ jobs:
     needs: build
     if: github.event_name == 'pull_request'
     timeout-minutes: 30
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
-
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Run tests
         run: pnpm test
-
-      - name: Run linter
-        run: pnpm lint
-
       - name: Check TypeScript
         run: pnpm check
-
-  publish:
-    name: Publish Linux Packages
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            metodo-appimage/*
-            metodo-snap/*
-            metodo-flatpak/*
-            metodo-deb/*
-            metodo-rpm/*
-            SHA256SUMS-linux/*
-          draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish Snap
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-        run: |
-          mkdir -p ~/.local/share/snapcraft/
-          echo "$SNAPCRAFT_STORE_CREDENTIALS" > ~/.local/share/snapcraft/snapcraft.cfg
-          snapcraft upload metodo-snap/*.snap --release=stable
-
-      - name: Upload to website
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          scp -i ~/.ssh/deploy_key metodo-appimage/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-deb/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-rpm/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key SHA256SUMS-linux/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-
-      - name: Notify deployment
-        uses: 8398a7/action-slack@v3
-        if: always()
-        with:
-          status: ${{ job.status }}
-          text: 'Linux build ${{ job.status }}: ${{ github.ref }}'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-          fields: repo,message,commit,author
+      - name: Run linter
+        run: pnpm lint

@@ -32,7 +32,7 @@ const env = {
   appSlug: "metodo",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "/manus-storage/metodo-logo-main_31adc223.png",
+  logoUrl: "/manus-storage/metodo-app-icon_642c8994.png",
   // Branding asset URLs
   logoTextUrl: "/manus-storage/metodo-logo-text_9ebebd2c.png",
   bannerUrl: "/manus-storage/metodo-banner_73c4b3eb.png",
@@ -75,7 +75,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS"],
+    permissions: ["POST_NOTIFICATIONS", "READ_CALENDAR", "WRITE_CALENDAR"],
     intentFilters: [
       {
         action: "VIEW",
@@ -97,6 +97,12 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    [
+      "expo-calendar",
+      {
+        calendarPermission: "Allow MeTodo to add and update deadlines in your calendar.",
+      },
+    ],
     [
       "expo-audio",
       {

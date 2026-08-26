@@ -23,6 +23,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Task, Category, AppSettings, AvatarCustomization, Theme } from "@/types";
 import { normalizeChartAnimationSettings } from "@/lib/chart-animation-settings";
+import { DEFAULT_CALENDAR_SELECTION_SETTINGS, normalizeCalendarSelectionSettings } from "@/lib/calendar-selection-settings";
 
 /**
  * TaskContextType Interface
@@ -35,6 +36,7 @@ interface TaskContextType {
   avatar: AvatarCustomization | null;
   addTask: (task: Task) => Promise<void>;
   updateTask: (task: Task) => Promise<void>;
+  updateTasks: (tasks: Task[]) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   addCategory: (category: Category) => Promise<void>;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -65,6 +67,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   version: "1.0.0",
   chartAnimationSpeed: "normal",
   reduceMotion: false,
+  ...DEFAULT_CALENDAR_SELECTION_SETTINGS,
 };
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
@@ -92,7 +95,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (categoriesData) setCategories(JSON.parse(categoriesData));
       if (settingsData) {
         const storedSettings = JSON.parse(settingsData);
-        setSettings({ ...DEFAULT_SETTINGS, ...storedSettings, ...normalizeChartAnimationSettings(storedSettings) });
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...storedSettings,
+          ...normalizeChartAnimationSettings(storedSettings),
+          ...normalizeCalendarSelectionSettings(storedSettings),
+        });
       }
       if (avatarData) setAvatar(JSON.parse(avatarData));
     } catch (error) {
@@ -119,6 +127,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem("metodo_tasks", JSON.stringify(updatedTasks));
     } catch (error) {
       console.error("Error updating task:", error);
+    }
+  };
+
+  const updateTasks = async (nextTasks: Task[]) => {
+    try {
+      setTasks(nextTasks);
+      await AsyncStorage.setItem("metodo_tasks", JSON.stringify(nextTasks));
+    } catch (error) {
+      console.error("Error updating tasks:", error);
     }
   };
 
@@ -226,6 +243,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         avatar,
         addTask,
         updateTask,
+        updateTasks,
         deleteTask,
         addCategory,
         updateSettings,
