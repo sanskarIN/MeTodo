@@ -2,12 +2,22 @@ import { Platform } from "react-native";
 import * as Calendar from "expo-calendar";
 
 import type { Task, TaskCalendarLink } from "@/types";
-import { createTaskCalendarEventData, hasTaskCalendarLink } from "@/lib/task-calendar-utils";
+import {
+  createTaskCalendarEventData,
+  hasTaskCalendarLink,
+  type WritableCalendarOption,
+} from "@/lib/task-calendar-utils";
+
+export type { WritableCalendarOption } from "@/lib/task-calendar-utils";
 
 export interface TaskCalendarOperationResult {
   success: boolean;
   message: string;
   link?: TaskCalendarLink;
+}
+
+export interface WritableCalendarResult extends TaskCalendarOperationResult {
+  calendars?: WritableCalendarOption[];
 }
 
 function failed(message: string): TaskCalendarOperationResult {
@@ -42,12 +52,38 @@ class TaskCalendarService {
     }
   }
 
-  private async getWritableCalendar(): Promise<Calendar.Calendar | null> {
+  private async getWritableCalendar(calendarId: string): Promise<Calendar.Calendar | null> {
     const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-    return calendars.find((calendar) => calendar.allowsModifications) ?? null;
+    return calendars.find((calendar) => calendar.id === calendarId && calendar.allowsModifications) ?? null;
   }
 
-  async linkTask(task: Task): Promise<TaskCalendarOperationResult> {
+  async getWritableCalendars(): Promise<WritableCalendarResult> {
+    const access = await this.ensureCalendarAccess();
+    if (!access.success) {
+      return access;
+    }
+
+    try {
+      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+      const writableCalendars = calendars
+        .filter((calendar) => calendar.allowsModifications)
+        .map((calendar) => ({ id: calendar.id, title: calendar.title, color: calendar.color }));
+
+      if (writableCalendars.length === 0) {
+        return failed("No writable calendar was found on this device.");
+      }
+
+      return {
+        success: true,
+        message: "Choose the calendar that should receive this task event.",
+        calendars: writableCalendars,
+      };
+    } catch {
+      return failed("Writable calendars could not be loaded. Please try again.");
+    }
+  }
+
+  async linkTask(task: Task, calendarId: string): Promise<TaskCalendarOperationResult> {
     const eventData = createTaskCalendarEventData(task);
     if (!eventData) {
       return failed("Add a valid due date before linking this task to your calendar.");
@@ -59,9 +95,9 @@ class TaskCalendarService {
     }
 
     try {
-      const calendar = await this.getWritableCalendar();
+      const calendar = await this.getWritableCalendar(calendarId);
       if (!calendar) {
-        return failed("No writable calendar was found on this device.");
+        return failed("The selected calendar is no longer writable. Choose another calendar and try again.");
       }
 
       const eventId = await Calendar.createEventAsync(calendar.id, eventData);
