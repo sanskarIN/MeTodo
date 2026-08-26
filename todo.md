@@ -831,4 +831,4 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Add a native writable-calendar picker before task-event creation
 - [x] Persist the user’s preferred writable calendar for subsequent task links
 - [x] Add deterministic selection tests and validate platform fallbacks
-- [ ] Save a calendar-selection checkpoint and publish review-ready changes
+- [x] Save a calendar-selection checkpoint and publish review-ready changes
