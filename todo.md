@@ -824,3 +824,11 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Implement task-to-calendar create, update, and unlink controls
 - [x] Add focused tests and validate Android, iOS, and web-safe behavior
 - [x] Save a calendar integration checkpoint and publish review-ready changes
+
+## Phase 32: Calendar Selection
+
+- [x] Inspect existing task calendar links and selection-state patterns
+- [x] Add a native writable-calendar picker before task-event creation
+- [x] Persist the user’s preferred writable calendar for subsequent task links
+- [x] Add deterministic selection tests and validate platform fallbacks
+- [ ] Save a calendar-selection checkpoint and publish review-ready changes
