@@ -15,6 +15,20 @@ export interface WritableCalendarOption {
   color?: string | null;
 }
 
+export type TaskCalendarIneligibilityReason = "already_linked" | "missing_due_date" | "invalid_due_date";
+
+export interface TaskCalendarIneligibleTask {
+  taskId: string;
+  taskTitle: string;
+  reason: TaskCalendarIneligibilityReason;
+  message: string;
+}
+
+export interface TaskCalendarBulkEligibility {
+  eligibleTasks: Task[];
+  ineligibleTasks: TaskCalendarIneligibleTask[];
+}
+
 const CALENDAR_START_HOUR = 9;
 const CALENDAR_EVENT_DURATION_MINUTES = 60;
 const CALENDAR_ALARM_OFFSET_MINUTES = -30;
@@ -46,6 +60,47 @@ export function findWritableCalendarOption(
   }
 
   return calendars.find((calendar) => calendar.id === preferredCalendarId) ?? null;
+}
+
+export function getTaskCalendarBulkEligibility(tasks: Task[]): TaskCalendarBulkEligibility {
+  const eligibleTasks: Task[] = [];
+  const ineligibleTasks: TaskCalendarIneligibleTask[] = [];
+
+  for (const task of tasks) {
+    if (hasTaskCalendarLink(task)) {
+      ineligibleTasks.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "already_linked",
+        message: "Already linked to a device calendar event.",
+      });
+      continue;
+    }
+
+    if (!task.dueDate) {
+      ineligibleTasks.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "missing_due_date",
+        message: "Skipped because the task has no due date.",
+      });
+      continue;
+    }
+
+    if (Number.isNaN(new Date(task.dueDate).getTime())) {
+      ineligibleTasks.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: "invalid_due_date",
+        message: "Skipped because the task due date is invalid.",
+      });
+      continue;
+    }
+
+    eligibleTasks.push(task);
+  }
+
+  return { eligibleTasks, ineligibleTasks };
 }
 
 export function createTaskCalendarEventData(
