@@ -32,14 +32,14 @@ This metadata is stored together with the task in local AsyncStorage. A task wit
 1. Create a task with a due date, or open an existing task with a due date.
 2. Open **Device Calendar** in task details and tap **Add to Device Calendar**.
 3. Grant calendar permission if the operating system asks for it.
-4. MeTodo selects a writable calendar and creates one task event.
+4. MeTodo lists writable calendars and the user explicitly selects one before the task event is created.
 5. Use **View in Calendar** to open the operating-system event UI, **Update Calendar Event** to manually refresh task title/details/date, or **Remove Calendar Event** to delete the external event and unlink the task.
 
 > Removing a task in MeTodo does not silently delete a calendar event. Use **Remove Calendar Event** first when the user intends to remove the device event as well.
 
 ## Privacy and Permission Behavior
 
-Calendar access is requested only after the user chooses an operation that needs it. MeTodo first checks that the Calendar API is available, then checks or requests calendar permission, and finally selects a calendar that permits modifications. This follows Expo’s guidance to request permission before calendar APIs and to prefer `allowsModifications` calendars.[1]
+Calendar access is requested only after the user chooses an operation that needs it. MeTodo first checks that the Calendar API is available, then checks or requests calendar permission, and finally lists calendars that permit modifications. The selected calendar becomes the local preferred destination for later task links, but each task still stores its own destination calendar ID. This follows Expo’s guidance to request permission before calendar APIs and to prefer `allowsModifications` calendars.[1]
 
 The CNG configuration includes the Expo Calendar plugin with a purpose-specific iOS permission message and declares Android calendar read/write permissions. No event data is sent to a MeTodo server by this feature.
 
