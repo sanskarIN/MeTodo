@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import SearchUtil, { type SearchableTask } from '../lib/search-utils';
+import type { Task } from '../types';
 import { THEME_PRESETS } from '../lib/themes-preset';
 import AnalyticsDataService from '../lib/analytics-data-service';
 import { normalizeChartAnimationSettings } from '../lib/chart-animation-settings';
@@ -14,6 +15,7 @@ import {
 import {
   createTaskCalendarEventData,
   findWritableCalendarOption,
+  getTaskCalendarBulkEligibility,
   hasTaskCalendarLink,
 } from '../lib/task-calendar-utils';
 import { normalizeCalendarSelectionSettings } from '../lib/calendar-selection-settings';
@@ -511,5 +513,45 @@ describe('Device calendar task mapping', () => {
       .toEqual({ preferredCalendarId: 'work', preferredCalendarTitle: 'Work' });
     expect(normalizeCalendarSelectionSettings({ preferredCalendarId: 123, preferredCalendarTitle: [] }))
       .toEqual({ preferredCalendarId: null, preferredCalendarTitle: null });
+  });
+
+  it('identifies only unlinked tasks with valid due dates as eligible for bulk calendar linking', () => {
+    const eligibility = getTaskCalendarBulkEligibility([
+      {
+        id: 'eligible',
+        title: 'Eligible task',
+        description: '',
+        dueDate,
+        priority: 'medium',
+        category: 'work',
+      },
+      {
+        id: 'already-linked',
+        title: 'Linked task',
+        description: '',
+        dueDate,
+        priority: 'high',
+        category: 'work',
+        calendarEvent: { eventId: 'event-2', calendarId: 'calendar-2', linkedAt: dueDate, lastSyncedAt: dueDate },
+      },
+      {
+        id: 'no-date',
+        title: 'Undated task',
+        description: '',
+        priority: 'low',
+        category: 'personal',
+      },
+      {
+        id: 'bad-date',
+        title: 'Malformed date task',
+        description: '',
+        dueDate: new Date('not-a-date'),
+        priority: 'low',
+        category: 'personal',
+      },
+    ] as Task[]);
+
+    expect(eligibility.eligibleTasks.map((task) => task.id)).toEqual(['eligible']);
+    expect(eligibility.ineligibleTasks.map((task) => task.reason)).toEqual(['already_linked', 'missing_due_date', 'invalid_due_date']);
   });
 });
