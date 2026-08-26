@@ -4,6 +4,7 @@ import * as Calendar from "expo-calendar";
 import type { Task, TaskCalendarLink } from "@/types";
 import {
   createTaskCalendarEventData,
+  getTaskCalendarBulkEligibility,
   hasTaskCalendarLink,
   type WritableCalendarOption,
 } from "@/lib/task-calendar-utils";
@@ -18,6 +19,28 @@ export interface TaskCalendarOperationResult {
 
 export interface WritableCalendarResult extends TaskCalendarOperationResult {
   calendars?: WritableCalendarOption[];
+}
+
+export type TaskCalendarBulkResultStatus = "linked" | "skipped" | "failed";
+
+export interface TaskCalendarBulkResultItem {
+  taskId: string;
+  taskTitle: string;
+  status: TaskCalendarBulkResultStatus;
+  message: string;
+  link?: TaskCalendarLink;
+}
+
+export interface TaskCalendarBulkResult {
+  success: boolean;
+  message: string;
+  calendarId?: string;
+  totalTaskCount: number;
+  eligibleTaskCount: number;
+  linkedTaskCount: number;
+  skippedTaskCount: number;
+  failedTaskCount: number;
+  results: TaskCalendarBulkResultItem[];
 }
 
 function failed(message: string): TaskCalendarOperationResult {
@@ -114,6 +137,135 @@ class TaskCalendarService {
       };
     } catch {
       return failed("The calendar event could not be created. Please try again.");
+    }
+  }
+
+  async bulkLinkTasks(tasks: Task[], calendarId: string): Promise<TaskCalendarBulkResult> {
+    const eligibility = getTaskCalendarBulkEligibility(tasks);
+    const skippedResults: TaskCalendarBulkResultItem[] = eligibility.ineligibleTasks.map((task) => ({
+      taskId: task.taskId,
+      taskTitle: task.taskTitle,
+      status: "skipped",
+      message: task.message,
+    }));
+    const resultBase = {
+      totalTaskCount: tasks.length,
+      eligibleTaskCount: eligibility.eligibleTasks.length,
+      skippedTaskCount: skippedResults.length,
+    };
+
+    if (eligibility.eligibleTasks.length === 0) {
+      return {
+        success: true,
+        message: "No eligible dated tasks need a calendar link.",
+        ...resultBase,
+        linkedTaskCount: 0,
+        failedTaskCount: 0,
+        results: skippedResults,
+      };
+    }
+
+    const access = await this.ensureCalendarAccess();
+    if (!access.success) {
+      const failedResults = eligibility.eligibleTasks.map((task) => ({
+        taskId: task.id,
+        taskTitle: task.title,
+        status: "failed" as const,
+        message: access.message,
+      }));
+      return {
+        success: false,
+        message: access.message,
+        ...resultBase,
+        linkedTaskCount: 0,
+        failedTaskCount: failedResults.length,
+        results: [...skippedResults, ...failedResults],
+      };
+    }
+
+    try {
+      const calendar = await this.getWritableCalendar(calendarId);
+      if (!calendar) {
+        const failedResults = eligibility.eligibleTasks.map((task) => ({
+          taskId: task.id,
+          taskTitle: task.title,
+          status: "failed" as const,
+          message: "The selected calendar is no longer writable. Choose another calendar and try again.",
+        }));
+        return {
+          success: false,
+          message: "The selected calendar is no longer writable. Choose another calendar and try again.",
+          ...resultBase,
+          linkedTaskCount: 0,
+          failedTaskCount: failedResults.length,
+          results: [...skippedResults, ...failedResults],
+        };
+      }
+
+      const linkedResults: TaskCalendarBulkResultItem[] = [];
+      for (const task of eligibility.eligibleTasks) {
+        const eventData = createTaskCalendarEventData(task);
+        if (!eventData) {
+          linkedResults.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            status: "failed",
+            message: "The task event could not be prepared from its due date.",
+          });
+          continue;
+        }
+
+        try {
+          const eventId = await Calendar.createEventAsync(calendar.id, eventData);
+          const syncedAt = new Date();
+          linkedResults.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            status: "linked",
+            message: "Added to the selected device calendar.",
+            link: {
+              eventId,
+              calendarId: calendar.id,
+              linkedAt: syncedAt,
+              lastSyncedAt: syncedAt,
+            },
+          });
+        } catch {
+          linkedResults.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            status: "failed",
+            message: "The calendar event could not be created for this task.",
+          });
+        }
+      }
+
+      const linkedTaskCount = linkedResults.filter((result) => result.status === "linked").length;
+      const failedTaskCount = linkedResults.filter((result) => result.status === "failed").length;
+      return {
+        success: failedTaskCount === 0,
+        message: `${linkedTaskCount} task${linkedTaskCount === 1 ? "" : "s"} linked; ${skippedResults.length} skipped; ${failedTaskCount} failed.`,
+        calendarId: calendar.id,
+        ...resultBase,
+        linkedTaskCount,
+        failedTaskCount,
+        results: [...linkedResults, ...skippedResults],
+      };
+    } catch {
+      const failedResults = eligibility.eligibleTasks.map((task) => ({
+        taskId: task.id,
+        taskTitle: task.title,
+        status: "failed" as const,
+        message: "Bulk calendar linking could not be completed. Please try again.",
+      }));
+      return {
+        success: false,
+        message: "Bulk calendar linking could not be completed. Please try again.",
+        ...resultBase,
+        linkedTaskCount: 0,
+        failedTaskCount: failedResults.length,
+        results: [...skippedResults, ...failedResults],
+      };
     }
   }
 
