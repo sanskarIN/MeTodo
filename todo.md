@@ -823,4 +823,4 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Add compatible calendar dependency, permissions, and platform fallback behavior
 - [x] Implement task-to-calendar create, update, and unlink controls
 - [x] Add focused tests and validate Android, iOS, and web-safe behavior
-- [ ] Save a calendar integration checkpoint and publish review-ready changes
+- [x] Save a calendar integration checkpoint and publish review-ready changes
