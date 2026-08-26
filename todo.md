@@ -839,4 +839,4 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Add an explicit native writable-calendar chooser for eligible task batches
 - [x] Persist successful calendar links without overwriting existing task links
 - [x] Add focused tests, documentation, and platform-safe validation
-- [ ] Save a bulk-linking checkpoint and publish review-ready changes
+- [x] Save a bulk-linking checkpoint and publish review-ready changes
