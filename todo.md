@@ -832,3 +832,11 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Persist the user’s preferred writable calendar for subsequent task links
 - [x] Add deterministic selection tests and validate platform fallbacks
 - [x] Save a calendar-selection checkpoint and publish review-ready changes
+
+## Phase 33: Bulk Device Calendar Linking
+
+- [x] Define eligible task rules and bulk-link result reporting
+- [x] Add an explicit native writable-calendar chooser for eligible task batches
+- [x] Persist successful calendar links without overwriting existing task links
+- [x] Add focused tests, documentation, and platform-safe validation
+- [ ] Save a bulk-linking checkpoint and publish review-ready changes
