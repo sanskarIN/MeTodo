@@ -28,16 +28,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9.12.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -54,14 +54,35 @@ jobs:
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: |
           if ($env:WINDOWS_CERTIFICATE) {
-            $cert_path = "C:\temp\cert.pfx"
-            [IO.File]::WriteAllBytes($cert_path, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
-            $env:CSC_LINK = $cert_path
-            $env:CSC_KEY_PASSWORD = $env:WINDOWS_CERTIFICATE_PASSWORD
+            $cert_dir = "C:\temp"
+            if (-not (Test-Path $cert_dir)) {
+              New-Item -ItemType Directory -Path $cert_dir -Force | Out-Null
+            }
+            $cert_path = "$cert_dir\cert.pfx"
+            try {
+              [IO.File]::WriteAllBytes($cert_path, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+              $env:CSC_LINK = $cert_path
+              $env:CSC_KEY_PASSWORD = $env:WINDOWS_CERTIFICATE_PASSWORD
+            } catch {
+              Write-Host "::error::Failed to setup certificate: $_"
+              exit 1
+            }
+          } else {
+            Write-Host "::warning::WINDOWS_CERTIFICATE not configured, building without code signing"
           }
           pnpm dist
 
+      - name: Check build artifacts
+        run: |
+          $files = Get-ChildItem dist -Include *.exe, *.msi -ErrorAction SilentlyContinue
+          if ($files.Count -eq 0) {
+            Write-Host "::warning::No build artifacts found in dist/"
+          } else {
+            Write-Host "Found $($files.Count) build artifacts"
+          }
+
       - name: Upload .exe to artifacts
+        if: hashFiles('dist/metodo-*-setup.exe') != ''
         uses: actions/upload-artifact@v4
         with:
           name: metodo-setup.exe
@@ -69,6 +90,7 @@ jobs:
           retention-days: 30
 
       - name: Upload portable to artifacts
+        if: hashFiles('dist/metodo-*-portable.exe') != ''
         uses: actions/upload-artifact@v4
         with:
           name: metodo-portable.exe
@@ -76,6 +98,7 @@ jobs:
           retention-days: 30
 
       - name: Upload MSI to artifacts
+        if: hashFiles('dist/metodo-*.msi') != ''
         uses: actions/upload-artifact@v4
         with:
           name: metodo-installer.msi
@@ -84,13 +107,18 @@ jobs:
 
       - name: Generate checksums
         run: |
-          $files = Get-ChildItem dist -Include *.exe, *.msi
+          $files = Get-ChildItem dist -Include *.exe, *.msi -ErrorAction SilentlyContinue
+          if ($files.Count -eq 0) {
+            Write-Host "::warning::No build artifacts found for checksums"
+            exit 0
+          }
           foreach ($file in $files) {
             $hash = (Get-FileHash $file -Algorithm SHA256).Hash
             "$hash  $($file.Name)" | Out-File -Append "dist/SHA256SUMS"
           }
 
       - name: Upload checksums
+        if: hashFiles('dist/SHA256SUMS') != ''
         uses: actions/upload-artifact@v4
         with:
           name: SHA256SUMS
@@ -117,16 +145,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9.12.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9.12.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -169,6 +197,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to website
+        if: env.DEPLOY_KEY != '' && env.DEPLOY_HOST != '' && env.DEPLOY_USER != ''
         env:
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
