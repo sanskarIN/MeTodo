@@ -878,4 +878,4 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Remove unavailable Linux package dependencies and stale Snapcraft publishing
 - [x] Validate workflow parsing, stale-command removal, Expo prebuilds, TypeScript, tests, bundle, lint, web export, and diff checks
 - [x] Document platform build assumptions and remaining hosted-runner requirements
-- [ ] Push the granular platform fixes and verify all hosted PR checks
+- [x] Push the granular platform fixes and verify all hosted PR checks
