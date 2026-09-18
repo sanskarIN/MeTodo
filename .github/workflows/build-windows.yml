@@ -45,56 +45,14 @@ jobs:
       - name: Build application
         run: pnpm build
 
-      - name: Build Electron app
-        run: pnpm build:electron
+      - name: Build Expo web distribution
+        run: npx expo export --platform web --output-dir dist/web
 
-      - name: Create installers
-        env:
-          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
-          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-        run: |
-          if ($env:WINDOWS_CERTIFICATE) {
-            $cert_path = "C:\temp\cert.pfx"
-            [IO.File]::WriteAllBytes($cert_path, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
-            $env:CSC_LINK = $cert_path
-            $env:CSC_KEY_PASSWORD = $env:WINDOWS_CERTIFICATE_PASSWORD
-          }
-          pnpm dist
-
-      - name: Upload .exe to artifacts
+      - name: Upload Expo web distribution
         uses: actions/upload-artifact@v4
         with:
-          name: metodo-setup.exe
-          path: dist/metodo-*-setup.exe
-          retention-days: 30
-
-      - name: Upload portable to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-portable.exe
-          path: dist/metodo-*-portable.exe
-          retention-days: 30
-
-      - name: Upload MSI to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-installer.msi
-          path: dist/metodo-*.msi
-          retention-days: 30
-
-      - name: Generate checksums
-        run: |
-          $files = Get-ChildItem dist -Include *.exe, *.msi
-          foreach ($file in $files) {
-            $hash = (Get-FileHash $file -Algorithm SHA256).Hash
-            "$hash  $($file.Name)" | Out-File -Append "dist/SHA256SUMS"
-          }
-
-      - name: Upload checksums
-        uses: actions/upload-artifact@v4
-        with:
-          name: SHA256SUMS
-          path: dist/SHA256SUMS
+          name: metodo-windows-web
+          path: dist/web
           retention-days: 30
 
       - name: Generate build report
@@ -158,30 +116,12 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            metodo-setup.exe/*
-            metodo-portable.exe/*
-            metodo-installer.msi/*
-            SHA256SUMS/*
+            metodo-windows-web/*
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload to website
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          scp -i ~/.ssh/deploy_key metodo-setup.exe/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-portable.exe/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-installer.msi/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key SHA256SUMS/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
 
       - name: Notify deployment
         uses: 8398a7/action-slack@v3
