@@ -39,93 +39,20 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libfuse-dev \
-            libappindicator3-dev \
-            libgconf-2-4 \
-            libnotify-dev \
-            libxss1 \
-            libnss3 \
-            libxkbfile1 \
-            snapcraft \
-            flatpak \
-            flatpak-builder \
-            appstream
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build application
         run: pnpm build
 
-      - name: Build Electron app
-        run: pnpm build:electron
+      - name: Build Expo web distribution
+        run: npx expo export --platform web --output-dir dist/web
 
-      - name: Create AppImage
-        run: pnpm dist:appimage
-
-      - name: Create Snap
-        run: pnpm dist:snap
-
-      - name: Create Flatpak
-        run: pnpm dist:flatpak
-
-      - name: Create DEB package
-        run: pnpm dist:deb
-
-      - name: Create RPM package
-        run: pnpm dist:rpm
-
-      - name: Upload AppImage to artifacts
+      - name: Upload Expo web distribution
         uses: actions/upload-artifact@v4
         with:
-          name: metodo-appimage
-          path: dist/metodo-*.AppImage
-          retention-days: 30
-
-      - name: Upload Snap to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-snap
-          path: dist/metodo_*.snap
-          retention-days: 30
-
-      - name: Upload Flatpak to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-flatpak
-          path: dist/metodo-*.flatpak
-          retention-days: 30
-
-      - name: Upload DEB to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-deb
-          path: dist/metodo_*.deb
-          retention-days: 30
-
-      - name: Upload RPM to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-rpm
-          path: dist/metodo-*.rpm
-          retention-days: 30
-
-      - name: Generate checksums
-        run: |
-          cd dist
-          sha256sum metodo-*.AppImage metodo_*.snap metodo-*.flatpak metodo_*.deb metodo-*.rpm > SHA256SUMS
-          cat SHA256SUMS
-
-      - name: Upload checksums
-        uses: actions/upload-artifact@v4
-        with:
-          name: SHA256SUMS-linux
-          path: dist/SHA256SUMS
+          name: metodo-linux-web
+          path: dist/web
           retention-days: 30
 
       - name: Generate build report
@@ -138,12 +65,8 @@ jobs:
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- AppImage" >> $GITHUB_STEP_SUMMARY
-          echo "- Snap" >> $GITHUB_STEP_SUMMARY
-          echo "- Flatpak" >> $GITHUB_STEP_SUMMARY
-          echo "- DEB" >> $GITHUB_STEP_SUMMARY
-          echo "- RPM" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- Expo web distribution" >> $GITHUB_STEP_SUMMARY
 
   test:
     name: Test Linux Build
@@ -197,40 +120,13 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            metodo-appimage/*
-            metodo-snap/*
-            metodo-flatpak/*
-            metodo-deb/*
-            metodo-rpm/*
-            SHA256SUMS-linux/*
+            metodo-linux-web/*
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Snap
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-        run: |
-          mkdir -p ~/.local/share/snapcraft/
-          echo "$SNAPCRAFT_STORE_CREDENTIALS" > ~/.local/share/snapcraft/snapcraft.cfg
-          snapcraft upload metodo-snap/*.snap --release=stable
-
-      - name: Upload to website
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          scp -i ~/.ssh/deploy_key metodo-appimage/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-deb/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key metodo-rpm/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
-          scp -i ~/.ssh/deploy_key SHA256SUMS-linux/* $DEPLOY_USER@$DEPLOY_HOST:/var/www/metodo/downloads/
 
       - name: Notify deployment
         uses: 8398a7/action-slack@v3
