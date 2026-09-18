@@ -48,6 +48,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Expo native project
+        run: npx expo prebuild --platform ios --no-install --non-interactive
+
       - name: Install CocoaPods
         run: |
           sudo gem install cocoapods
@@ -82,8 +85,8 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           cd ios
-          xcodebuild -workspace metodo.xcworkspace \
-            -scheme metodo \
+          xcodebuild -workspace MeTodo.xcworkspace \
+            -scheme MeTodo \
             -configuration Debug \
             -derivedDataPath build \
             -archivePath build/metodo.xcarchive \
@@ -93,8 +96,8 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         run: |
           cd ios
-          xcodebuild -workspace metodo.xcworkspace \
-            -scheme metodo \
+          xcodebuild -workspace MeTodo.xcworkspace \
+            -scheme MeTodo \
             -configuration Release \
             -derivedDataPath build \
             -archivePath build/metodo.xcarchive \
