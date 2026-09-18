@@ -864,3 +864,18 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Passed TypeScript compilation, 21 Vitest tests with 1 existing skipped auth test, production server bundling, Expo lint, web export with 25 routes, and `git diff --check`
 - [x] Documented the remaining Expo web push-notification capability notice as non-actionable for this managed cross-platform build
 - [x] Published the verified fixes on a review branch without bypassing protected `main`
+
+
+## Phase 35: Multi-Platform CI Build Hardening
+
+- [x] Inspect failing Android, iOS, macOS, Linux, and Windows hosted workflow logs
+- [x] Install pnpm before enabling pnpm cache in all native workflow jobs
+- [x] Generate Android and iOS native projects during CI before platform compilation
+- [x] Restore missing Expo launcher assets required by `app.config.ts`
+- [x] Align Android CI with Expo SDK 54 NDK `27.1.12297006`
+- [x] Align iOS CI with the generated `MeTodo.xcworkspace` and `MeTodo` scheme
+- [x] Remove unsupported Electron and desktop-package commands from desktop workflows
+- [x] Remove unavailable Linux package dependencies and stale Snapcraft publishing
+- [x] Validate workflow parsing, stale-command removal, Expo prebuilds, TypeScript, tests, bundle, lint, web export, and diff checks
+- [x] Document platform build assumptions and remaining hosted-runner requirements
+- [ ] Push the granular platform fixes and verify all hosted PR checks
