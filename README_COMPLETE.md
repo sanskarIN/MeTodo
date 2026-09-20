@@ -1,8 +1,8 @@
 # MeTodo - Complete Comprehensive README
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -466,7 +466,7 @@ metodo/
 
 **1. Clone Repository**
 ```bash
-git clone https://github.com/Sanskar-in/MeTodo.git
+git clone https://www.github.com/sanskarIN/MeTodo.git
 cd metodo
 ```
 
@@ -496,7 +496,7 @@ pnpm dev
 
 ```bash
 # Clone the repository
-git clone https://github.com/Sanskar-in/MeTodo.git
+git clone https://www.github.com/sanskarIN/MeTodo.git
 
 # Navigate to project directory
 cd metodo
@@ -1331,7 +1331,7 @@ MeTodo is open source and available under the MIT License.
 ```
 MIT License
 
-Copyright (c) 2026 Sanskar Yadav
+Copyright (c) 2026 Sanskar
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1361,12 +1361,12 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 - [Setup Guides](./docs/how-to-run/)
 
 **Community:**
-- [GitHub Issues](https://github.com/Sanskar-in/MeTodo/issues)
-- [GitHub Discussions](https://github.com/Sanskar-in/MeTodo/discussions)
+- [GitHub Issues](https://www.github.com/sanskarIN/MeTodo/issues)
+- [GitHub Discussions](https://www.github.com/sanskarIN/MeTodo/discussions)
 
 **Contact:**
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
-- **GitHub:** https://github.com/Sanskar-in
+- **Email:** sanskarin@outlook.in
+- **GitHub:** https://www.github.com/sanskarIN
 - **Twitter:** https://x.com/SanskarCode
 - **LinkedIn:** https://linkedin.com/in/sanskar-in
 
@@ -1428,7 +1428,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 ### Creator
 
-**Sanskar Yadav**
+**Sanskar**
 - Full-stack developer
 - Passionate about creating beautiful applications
 - Focused on user experience and performance
@@ -1522,16 +1522,16 @@ A: Yes! See [Contributing](#contributing) section.
 
 ### Creator Links
 
-- **GitHub:** https://github.com/Sanskar-in
+- **GitHub:** https://www.github.com/sanskarIN
 - **Twitter:** https://x.com/SanskarCode
 - **LinkedIn:** https://linkedin.com/in/sanskar-in
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
+- **Email:** sanskarin@outlook.in
 
 ### Project Links
 
-- **Repository:** https://github.com/Sanskar-in/MeTodo
-- **Issues:** https://github.com/Sanskar-in/MeTodo/issues
-- **Discussions:** https://github.com/Sanskar-in/MeTodo/discussions
+- **Repository:** https://www.github.com/sanskarIN/MeTodo
+- **Issues:** https://www.github.com/sanskarIN/MeTodo/issues
+- **Discussions:** https://www.github.com/sanskarIN/MeTodo/discussions
 
 ---
 
@@ -1555,7 +1555,7 @@ Thank you for using MeTodo!
 
 ---
 
-**Made with ❤️ by Sanskar Yadav**
+**Made with ❤️ by Sanskar**
 
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0  
