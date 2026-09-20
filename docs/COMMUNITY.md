@@ -1,8 +1,8 @@
 # MeTodo - Community Guidelines & Contribution Standards
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -636,18 +636,18 @@ Violations may result in:
 ### Communication Channels
 
 **GitHub**
-- Issues: https://github.com/Sanskar-in/MeTodo/issues
-- Discussions: https://github.com/Sanskar-in/MeTodo/discussions
-- Repository: https://github.com/Sanskar-in/MeTodo
+- Issues: https://www.github.com/sanskarIN/MeTodo/issues
+- Discussions: https://www.github.com/sanskarIN/MeTodo/discussions
+- Repository: https://www.github.com/sanskarIN/MeTodo
 
 **Email**
 - Support: supportramsandesh@gmail.com
-- Creator: sanskaryadavfrom2012to2026@gmail.com
+- Creator: sanskarin@outlook.in
 
 **Social Media**
 - Twitter/X: @SanskarCode
 - LinkedIn: linkedin.com/in/sanskar-in
-- GitHub: github.com/Sanskar-in
+- GitHub: github.com/sanskarIN
 
 ### Community Events
 
@@ -732,7 +732,7 @@ Thank you for being part of the MeTodo community!
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
@@ -742,8 +742,8 @@ Made with ❤️ by Sanskar Yadav
 - [Code of Conduct](#code-of-conduct)
 - [Report Error](./REPORT_ERROR.md)
 - [Feature Request](./FEATURE_REQUEST.md)
-- [GitHub Repository](https://github.com/Sanskar-in/MeTodo)
-- [GitHub Discussions](https://github.com/Sanskar-in/MeTodo/discussions)
+- [GitHub Repository](https://www.github.com/sanskarIN/MeTodo)
+- [GitHub Discussions](https://www.github.com/sanskarIN/MeTodo/discussions)
 
 ---
 
