@@ -1,6 +1,6 @@
 # MeTodo Auto-Update System Guide
 
-**Copyright © Sanskar Yadav. All rights reserved.**
+**Copyright © Sanskar. All rights reserved.**
 
 ## Table of Contents
 
@@ -539,5 +539,5 @@ interface UpdateHistory {
 For issues or questions about the auto-update system:
 
 - **Documentation**: https://metodo.app/docs/auto-update
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 - **Email Support**: supportramsandesh@gmail.com
