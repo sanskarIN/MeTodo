@@ -1,6 +1,6 @@
 // =============================================================================
-// (c) Copyright Sanskar Yadav. All rights reserved.
-// Made by Sanskar Yadav.
+// (c) Copyright Sanskar. All rights reserved.
+// Made by Sanskar.
 // =============================================================================
 
 /**
@@ -26,10 +26,10 @@ export const APP_METADATA = {
   version: '1.0.0',
   build: '1',
   description: 'A premium task management app with avatar creator and 50+ themes',
-  author: 'Sanskar Yadav',
+  author: 'Sanskar',
   email: 'supportramsandesh@gmail.com',
-  website: 'https://github.com/Sanskar-in/MeTodo',
-  repository: 'https://github.com/Sanskar-in/MeTodo',
+  website: 'https://www.github.com/sanskarIN/MeTodo',
+  repository: 'https://www.github.com/sanskarIN/MeTodo',
   license: 'MIT',
   keywords: ['task', 'management', 'productivity', 'todo', 'avatar', 'themes'],
 } as const;
