@@ -1,8 +1,8 @@
 # MeTodo - Extended Documentation Index
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -265,7 +265,7 @@ For questions about documentation or to report issues:
 
 **Email:** supportramsandesh@gmail.com
 
-**GitHub:** https://github.com/Sanskar-in/MeTodo
+**GitHub:** https://www.github.com/sanskarIN/MeTodo
 
 **Report Issues:** See **Report Error Guide**
 
@@ -276,7 +276,7 @@ For questions about documentation or to report issues:
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
