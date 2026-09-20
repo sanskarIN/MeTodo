@@ -1,8 +1,8 @@
 # MeTodo - Feature Request & Contribution Guide
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -34,12 +34,12 @@ This document provides comprehensive guidelines for requesting new features, sug
 Before requesting a new feature, please check if it has already been requested:
 
 **1. Search GitHub Discussions**
-- Visit: https://github.com/Sanskar-in/MeTodo/discussions
+- Visit: https://www.github.com/sanskarIN/MeTodo/discussions
 - Use search to find similar feature requests
 - Filter by category "Feature Requests"
 
 **2. Check GitHub Issues**
-- Visit: https://github.com/Sanskar-in/MeTodo/issues
+- Visit: https://www.github.com/sanskarIN/MeTodo/issues
 - Search for similar features
 - Filter by label "enhancement"
 
@@ -87,12 +87,12 @@ Before requesting, consider:
 - Best for feature discussions
 - Allows community voting
 - Visible to entire community
-- Link: https://github.com/Sanskar-in/MeTodo/discussions
+- Link: https://www.github.com/sanskarIN/MeTodo/discussions
 
 **Method 2: GitHub Issues**
 - For detailed feature specifications
 - For tracking implementation
-- Link: https://github.com/Sanskar-in/MeTodo/issues
+- Link: https://www.github.com/sanskarIN/MeTodo/issues
 
 **Method 3: Email**
 - For detailed proposals
@@ -734,9 +734,9 @@ This feature is planned for v1.1.0 according to the roadmap.
 
 ### Feature Request Channels
 
-**GitHub Discussions:** https://github.com/Sanskar-in/MeTodo/discussions
+**GitHub Discussions:** https://www.github.com/sanskarIN/MeTodo/discussions
 
-**GitHub Issues:** https://github.com/Sanskar-in/MeTodo/issues
+**GitHub Issues:** https://www.github.com/sanskarIN/MeTodo/issues
 
 **Email:** supportramsandesh@gmail.com
 
@@ -777,7 +777,7 @@ This feature is planned for v1.1.0 according to the roadmap.
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
