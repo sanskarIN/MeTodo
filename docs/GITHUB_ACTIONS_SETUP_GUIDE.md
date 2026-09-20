@@ -524,7 +524,7 @@ gh run download <run-id> -n <artifact-name>
 For GitHub Actions setup issues:
 
 - **Email**: supportramsandesh@gmail.com
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 - **GitHub Actions Docs**: https://docs.github.com/en/actions
 - **Workflow Examples**: https://github.com/actions
 
@@ -547,4 +547,4 @@ For GitHub Actions setup issues:
 
 **Last Updated**: 2026-07-03
 **Version**: 1.0.0
-**Author**: Sanskar Yadav
+**Author**: Sanskar
