@@ -66,7 +66,7 @@ See [SYSTEM_REQUIREMENTS.md](../requirements/SYSTEM_REQUIREMENTS.md) for detaile
 
 ```bash
 # Clone repository
-git clone https://github.com/Sanskar-in/MeTodo.git
+git clone https://www.github.com/sanskarIN/MeTodo.git
 cd MeTodo
 
 # Install dependencies
@@ -137,7 +137,7 @@ eas build --platform ios
 
 ```bash
 # Clone repository
-git clone https://github.com/Sanskar-in/MeTodo.git
+git clone https://www.github.com/sanskarIN/MeTodo.git
 cd MeTodo
 
 # Install dependencies
@@ -503,8 +503,8 @@ sudo snap remove metodo
 
 ### Installation Support
 
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
-- **GitHub Issues:** https://github.com/Sanskar-in/MeTodo/issues
+- **Email:** sanskarin@outlook.in
+- **GitHub Issues:** https://www.github.com/sanskarIN/MeTodo/issues
 - **Twitter:** https://x.com/SanskarCode
 
 ### Documentation
@@ -518,4 +518,4 @@ sudo snap remove metodo
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
