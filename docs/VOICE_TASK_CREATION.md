@@ -1,6 +1,6 @@
 // =============================================================================
-// (c) Copyright Sanskar Yadav. All rights reserved.
-// Made by Sanskar Yadav.
+// (c) Copyright Sanskar. All rights reserved.
+// Made by Sanskar.
 // =============================================================================
 
 # Voice Task Creation Documentation
@@ -410,4 +410,4 @@ For issues or questions about Voice Task Creation:
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
