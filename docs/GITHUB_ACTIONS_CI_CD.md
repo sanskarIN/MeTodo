@@ -1,6 +1,6 @@
 # MeTodo GitHub Actions CI/CD Documentation
 
-**Copyright © Sanskar Yadav. All rights reserved.**
+**Copyright © Sanskar. All rights reserved.**
 
 ## Table of Contents
 
@@ -145,7 +145,7 @@ The MeTodo CI/CD system uses GitHub Actions to automatically build, test, and de
 #### 1. Clone Repository
 
 ```bash
-git clone https://github.com/sanskaryadav/metodo.git
+git clone https://github.com/sanskarIN/MeTodo.git
 cd metodo
 ```
 
@@ -471,5 +471,5 @@ Enable debug logging:
 For issues or questions about CI/CD:
 
 - **Documentation**: https://metodo.app/docs/ci-cd
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 - **Email Support**: supportramsandesh@gmail.com
