@@ -617,4 +617,4 @@ App Store / Google Play / Web Server
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
