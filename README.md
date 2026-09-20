@@ -320,7 +320,7 @@ To install and run MeTodo locally, follow these steps:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/SanskarYadav/MeTodo.git
+    git clone https://github.com/Sanskar/MeTodo.git
     cd MeTodo
     ```
 
