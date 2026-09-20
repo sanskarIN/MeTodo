@@ -1,6 +1,6 @@
 # MeTodo Update Server API Documentation
 
-**Copyright © Sanskar Yadav. All rights reserved.**
+**Copyright © Sanskar. All rights reserved.**
 
 ## Table of Contents
 
@@ -621,4 +621,4 @@ For API support or issues:
 
 - **Email**: supportramsandesh@gmail.com
 - **Documentation**: https://metodo.app/docs/api
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
