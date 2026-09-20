@@ -1,8 +1,8 @@
 # MeTodo - Settings & Preferences Guide
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -416,10 +416,10 @@ Settings are preferences that control how MeTodo behaves and appears. Customize 
 5. Contact information
 
 **Social Links:**
-- GitHub: github.com/Sanskar-in
+- GitHub: github.com/sanskarIN
 - LinkedIn: linkedin.com/in/sanskar-in
 - Twitter/X: @SanskarCode
-- Email: sanskaryadavfrom2012to2026@gmail.com
+- Email: sanskarin@outlook.in
 
 ### Support
 
@@ -639,7 +639,7 @@ Settings are preferences that control how MeTodo behaves and appears. Customize 
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
