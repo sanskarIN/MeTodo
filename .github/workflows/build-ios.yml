@@ -90,6 +90,9 @@ jobs:
             -configuration Debug \
             -derivedDataPath build \
             -archivePath build/metodo.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM="" \
             archive
 
       - name: Build iOS app (Release)
