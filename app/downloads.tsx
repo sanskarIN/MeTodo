@@ -16,8 +16,8 @@ import * as Clipboard from 'expo-clipboard';
  * ============================================================================
  * MeTodo Downloads Page Component
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: Comprehensive download page for all platforms
  *
@@ -775,7 +775,7 @@ export default function DownloadsPage() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://github.com/sanskaryadav/metodo')}
+            onPress={() => Linking.openURL('https://github.com/sanskarIN/MeTodo')}
           >
             <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>
               🐙 GitHub
