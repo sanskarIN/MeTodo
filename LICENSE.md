@@ -1,8 +1,8 @@
 # MeTodo - MIT License
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -12,7 +12,7 @@ This file contains the MIT License for MeTodo, granting users the right to use, 
 
 ## MIT License
 
-Copyright (c) 2026 Sanskar Yadav
+Copyright (c) 2026 Sanskar
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -60,9 +60,9 @@ When using or distributing MeTodo, please include:
 
 ```
 MeTodo - Task Management Application
-Copyright (c) 2026 Sanskar Yadav
+Copyright (c) 2026 Sanskar
 Licensed under the MIT License
-https://github.com/Sanskar-in/MeTodo
+https://www.github.com/sanskarIN/MeTodo
 ```
 
 ---
@@ -147,13 +147,13 @@ For questions about the license, contact:
 
 **Email:** supportramsandesh@gmail.com
 
-**Creator:** Sanskar Yadav
+**Creator:** Sanskar
 
-**GitHub:** https://github.com/Sanskar-in
+**GitHub:** https://www.github.com/sanskarIN
 
 ---
 
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
