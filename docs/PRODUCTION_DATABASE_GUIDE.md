@@ -601,7 +601,7 @@ mysql -u metodo_user -p -e "CHANGE MASTER TO MASTER_LOG_FILE='mysql-bin.000001',
 For database issues:
 
 - **Email**: supportramsandesh@gmail.com
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 - **MySQL Docs**: https://dev.mysql.com/doc/
 
 ---
@@ -623,4 +623,4 @@ For database issues:
 
 **Last Updated**: 2026-07-03
 **Version**: 1.0.0
-**Author**: Sanskar Yadav
+**Author**: Sanskar
