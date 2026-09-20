@@ -1,6 +1,6 @@
 # MeTodo Database Persistence Guide
 
-**Copyright © Sanskar Yadav. All rights reserved.**
+**Copyright © Sanskar. All rights reserved.**
 
 ## Table of Contents
 
@@ -519,4 +519,4 @@ For database-related issues:
 
 - **Email**: supportramsandesh@gmail.com
 - **Documentation**: https://metodo.app/docs/database
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
