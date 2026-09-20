@@ -1,6 +1,6 @@
 # MeTodo Automated Release Workflow Guide
 
-**Copyright © Sanskar Yadav. All rights reserved.**
+**Copyright © Sanskar. All rights reserved.**
 
 ## Table of Contents
 
@@ -239,7 +239,7 @@ Download the appropriate package for your platform from the Releases page.
 
 ## Support
 
-For issues or questions, please visit: https://github.com/sanskaryadav/metodo/issues
+For issues or questions, please visit: https://github.com/sanskarIN/MeTodo/issues
 ```
 
 ## Publishing
@@ -285,7 +285,7 @@ Content-Type: application/json
 
 View workflow status in GitHub Actions:
 ```
-https://github.com/sanskaryadav/metodo/actions
+https://github.com/sanskarIN/MeTodo/actions
 ```
 
 ### Build Logs
@@ -427,4 +427,4 @@ For release workflow issues:
 
 - **Email**: supportramsandesh@gmail.com
 - **Documentation**: https://metodo.app/docs/release-workflow
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
