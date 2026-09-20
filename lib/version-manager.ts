@@ -2,8 +2,8 @@
  * ============================================================================
  * MeTodo Version Manager
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: Comprehensive version management and release data system
  *
@@ -461,22 +461,22 @@ export class VersionManager {
           {
             type: 'feature',
             description: 'Core task management system',
-            author: 'Sanskar Yadav',
+            author: 'Sanskar',
           },
           {
             type: 'feature',
             description: 'Avatar creator with customization',
-            author: 'Sanskar Yadav',
+            author: 'Sanskar',
           },
           {
             type: 'feature',
             description: '50+ themes system',
-            author: 'Sanskar Yadav',
+            author: 'Sanskar',
           },
           {
             type: 'feature',
             description: 'Developer options with 30+ tools',
-            author: 'Sanskar Yadav',
+            author: 'Sanskar',
           },
         ],
         downloads: 15000,
