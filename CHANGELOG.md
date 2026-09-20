@@ -1,8 +1,8 @@
 # MeTodo - Changelog
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -390,12 +390,12 @@ Complete changelog documenting all versions, features, bug fixes, and updates fo
 
 ### Report Issues
 
-- GitHub Issues: https://github.com/Sanskar-in/MeTodo/issues
+- GitHub Issues: https://www.github.com/sanskarIN/MeTodo/issues
 - Email: supportramsandesh@gmail.com
 
 ### Request Features
 
-- GitHub Discussions: https://github.com/Sanskar-in/MeTodo/discussions
+- GitHub Discussions: https://www.github.com/sanskarIN/MeTodo/discussions
 - Email: supportramsandesh@gmail.com
 
 ### Get Help
@@ -420,7 +420,7 @@ MeTodo is licensed under the MIT License. See [LICENSE.md](./LICENSE.md) for det
 
 ## Credits
 
-**Creator:** Sanskar Yadav
+**Creator:** Sanskar
 
 **Contributors:** Community contributors
 
@@ -431,15 +431,15 @@ MeTodo is licensed under the MIT License. See [LICENSE.md](./LICENSE.md) for det
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
 ## Quick Links
 
-- [GitHub Repository](https://github.com/Sanskar-in/MeTodo)
-- [Issue Tracker](https://github.com/Sanskar-in/MeTodo/issues)
-- [Discussions](https://github.com/Sanskar-in/MeTodo/discussions)
+- [GitHub Repository](https://www.github.com/sanskarIN/MeTodo)
+- [Issue Tracker](https://www.github.com/sanskarIN/MeTodo/issues)
+- [Discussions](https://www.github.com/sanskarIN/MeTodo/discussions)
 - [Documentation](./docs/README.md)
 - [Contributing](./docs/CONTRIBUTING.md)
 - [License](./LICENSE.md)
