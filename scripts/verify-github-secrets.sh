@@ -71,7 +71,7 @@ if [ -z "$GITHUB_TOKEN" ] || [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
     echo "Usage: bash verify-github-secrets.sh <github-token> <repo-owner> <repo-name>"
     echo ""
     echo "Example:"
-    echo "  bash verify-github-secrets.sh ghp_xxxxxxxxxxxx sanskaryadav metodo"
+    echo "  bash verify-github-secrets.sh ghp_xxxxxxxxxxxx sanskarIN metodo"
     echo ""
     echo "To get a GitHub token:"
     echo "  1. Go to https://github.com/settings/tokens"
