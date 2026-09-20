@@ -3,8 +3,8 @@
 ################################################################################
 # MeTodo Master Build Script
 # =============================================================================
-# (c) Copyright Sanskar Yadav. All rights reserved.
-# Made by Sanskar Yadav.
+# (c) Copyright Sanskar. All rights reserved.
+# Made by Sanskar.
 #
 # PURPOSE: Master build script that orchestrates builds for all platforms
 #
