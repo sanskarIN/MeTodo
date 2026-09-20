@@ -1,7 +1,7 @@
 /**
  * =============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  * =============================================================================
  *
  * FILE: build-config/ios-macos-build.config.ts
@@ -134,7 +134,7 @@ export const iosBuildConfig = {
     betaAppReviewInfo: {
       contactEmail: "support@metodo.app",
       contactFirstName: "Sanskar",
-      contactLastName: "Yadav",
+      contactLastName: "Sanskar",
       contactPhone: "+1-234-567-8900",
       demoAccountName: "demo@metodo.app",
       demoAccountPassword: process.env.TESTFLIGHT_DEMO_PASSWORD,
@@ -370,7 +370,7 @@ export const iosBuildConfig = {
     downloadUrl: "https://metodo.app/download",
     releaseNotesUrl: "https://metodo.app/release-notes",
     supportUrl: "https://metodo.app/support",
-    issuesUrl: "https://github.com/sanskaryadav/metodo/issues",
+    issuesUrl: "https://github.com/sanskarIN/MeTodo/issues",
   },
 };
 
