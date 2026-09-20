@@ -3,8 +3,8 @@
 ################################################################################
 # MeTodo Socket.io Integration Setup Script
 ################################################################################
-# (c) Copyright Sanskar Yadav. All rights reserved.
-# Made by Sanskar Yadav.
+# (c) Copyright Sanskar. All rights reserved.
+# Made by Sanskar.
 #
 # PURPOSE: Install and configure Socket.io for real-time WebSocket support
 #
@@ -70,8 +70,8 @@ cat > /home/ubuntu/metodo/server/_core/socket-init.ts << 'EOFFILE'
  * ============================================================================
  * MeTodo Socket.io Initialization
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: Initialize Socket.io server for real-time updates
  *
@@ -205,8 +205,8 @@ cat > /home/ubuntu/metodo/hooks/use-socket-io.ts << 'EOFFILE'
  * ============================================================================
  * MeTodo Socket.io React Hook
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: React hook for Socket.io client connections
  *
