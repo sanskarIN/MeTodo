@@ -31,7 +31,7 @@ See [SYSTEM_REQUIREMENTS.md](../requirements/SYSTEM_REQUIREMENTS.md) for detaile
 
 ```bash
 # Clone MeTodo repository
-git clone https://github.com/Sanskar-in/MeTodo.git
+git clone https://www.github.com/sanskarIN/MeTodo.git
 
 # Navigate to project directory
 cd MeTodo
@@ -452,17 +452,17 @@ After setting up development:
 
 - [Expo Documentation](https://docs.expo.dev/)
 - [React Native Documentation](https://reactnative.dev/)
-- [Project Repository](https://github.com/Sanskar-in/MeTodo)
+- [Project Repository](https://www.github.com/sanskarIN/MeTodo)
 
 ### Contact
 
-- Email: sanskaryadavfrom2012to2026@gmail.com
+- Email: sanskarin@outlook.in
 - Twitter: https://x.com/SanskarCode
-- GitHub: https://github.com/Sanskar-in
+- GitHub: https://www.github.com/sanskarIN
 
 ---
 
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
