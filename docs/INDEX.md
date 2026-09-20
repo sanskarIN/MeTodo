@@ -171,8 +171,8 @@ All documentation follows these standards:
 All files include copyright header:
 ```
 =============================================================================
-(c) Copyright Sanskar Yadav. All rights reserved.
-Made by Sanskar Yadav.
+(c) Copyright Sanskar. All rights reserved.
+Made by Sanskar.
 =============================================================================
 ```
 
@@ -196,15 +196,15 @@ Made by Sanskar Yadav.
 
 Found an error or missing information?
 
-- **GitHub Issues:** https://github.com/Sanskar-in/MeTodo/issues
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
+- **GitHub Issues:** https://www.github.com/sanskarIN/MeTodo/issues
+- **Email:** sanskarin@outlook.in
 
 ### Support Channels
 
-- **GitHub:** https://github.com/Sanskar-in/MeTodo
+- **GitHub:** https://www.github.com/sanskarIN/MeTodo
 - **Twitter:** https://x.com/SanskarCode
 - **LinkedIn:** https://linkedin.com/in/sanskar-in
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
+- **Email:** sanskarin@outlook.in
 
 ---
 
@@ -289,12 +289,12 @@ All documentation is provided under the MIT License. See LICENSE file for detail
 
 ## Credits
 
-**Created by:** Sanskar Yadav  
-**Project:** MeTodo  
-**Version:** 1.0.0  
+**Created by:** Sanskar
+**Project:** MeTodo
+**Version:** 1.0.0
 **Last Updated:** June 29, 2026
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
@@ -302,7 +302,7 @@ Made with ❤️ by Sanskar Yadav
 
 | Link | Purpose |
 |------|---------|
-| [GitHub Repository](https://github.com/Sanskar-in/MeTodo) | Source code |
+| [GitHub Repository](https://www.github.com/sanskarIN/MeTodo) | Source code |
 | [Getting Started](./guides/GETTING_STARTED.md) | First-time users |
 | [Development Setup](./how-to-run/DEVELOPMENT_SETUP.md) | Developers |
 | [System Requirements](./requirements/SYSTEM_REQUIREMENTS.md) | Requirements |
