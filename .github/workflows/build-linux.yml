@@ -45,6 +45,11 @@ jobs:
       - name: Build application
         run: pnpm build
 
+      - name: Prepare NativeWind web cache
+        run: |
+          mkdir -p node_modules/react-native-css-interop/.cache
+          npx tailwindcss -i ./global.css -o node_modules/react-native-css-interop/.cache/web.css
+
       - name: Build Expo web distribution
         run: npx expo export --platform web --output-dir dist/web
 
