@@ -240,7 +240,7 @@ interface ExternalLinkProps extends TextProps {
 
 **Example:**
 ```typescript
-<ExternalLink href="https://github.com/Sanskar-in">
+<ExternalLink href="https://www.github.com/sanskarIN">
   Visit GitHub
 </ExternalLink>
 ```
@@ -420,8 +420,8 @@ interface ThemeCardProps {
 ```typescript
 /**
  * =============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  * =============================================================================
  *
  * FILE: app/my-screen.tsx
@@ -452,8 +452,8 @@ export default function MyScreen() {
 ```typescript
 /**
  * =============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  * =============================================================================
  *
  * FILE: components/my-component.tsx
@@ -610,4 +610,4 @@ export function MyComponent() {
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
