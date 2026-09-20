@@ -369,8 +369,8 @@ xcode-select --install
 
 ### Getting Help
 
-- GitHub Issues: https://github.com/Sanskar-in/MeTodo/issues
-- Email: sanskaryadavfrom2012to2026@gmail.com
+- GitHub Issues: https://www.github.com/sanskarIN/MeTodo/issues
+- Email: sanskarin@outlook.in
 - Twitter: https://x.com/SanskarCode
 
 ---
@@ -378,4 +378,4 @@ xcode-select --install
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
