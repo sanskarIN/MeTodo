@@ -539,7 +539,7 @@ Create runbooks for common incidents:
 For monitoring issues:
 
 - **Email**: supportramsandesh@gmail.com
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 - **Prometheus Docs**: https://prometheus.io/docs/
 - **Grafana Docs**: https://grafana.com/docs/
 
@@ -547,4 +547,4 @@ For monitoring issues:
 
 **Last Updated**: 2026-07-03
 **Version**: 1.0.0
-**Author**: Sanskar Yadav
+**Author**: Sanskar
