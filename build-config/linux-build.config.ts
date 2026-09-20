@@ -1,7 +1,7 @@
 /**
  * =============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  * =============================================================================
  *
  * FILE: build-config/linux-build.config.ts
@@ -78,7 +78,7 @@ export const linuxBuildConfig = {
     ],
     icon: "build/linux/icon.png",
     category: "Productivity",
-    maintainer: "Sanskar Yadav <support@metodo.app>",
+    maintainer: "Sanskar <support@metodo.app>",
     description: "Stay productive with MeTodo",
   },
 
@@ -89,7 +89,7 @@ export const linuxBuildConfig = {
     artifactName: "${productName}-${version}-${arch}.${ext}",
     updateInfo: {
       provider: "github",
-      owner: "sanskaryadav",
+      owner: "sanskarIN",
       repo: "metodo",
     },
   },
@@ -180,7 +180,7 @@ export const linuxBuildConfig = {
       "libsecret-1-0",
       "fonts-liberation",
     ],
-    maintainer: "Sanskar Yadav <support@metodo.app>",
+    maintainer: "Sanskar <support@metodo.app>",
     homepage: "https://metodo.app",
     category: "Productivity",
     afterInstall: "scripts/linux/deb-after-install.sh",
@@ -203,7 +203,7 @@ export const linuxBuildConfig = {
       "libsecret",
       "liberation-fonts",
     ],
-    maintainer: "Sanskar Yadav <support@metodo.app>",
+    maintainer: "Sanskar <support@metodo.app>",
     homepage: "https://metodo.app",
     category: "Productivity",
     afterInstall: "scripts/linux/rpm-after-install.sh",
@@ -304,7 +304,7 @@ export const linuxBuildConfig = {
   autoUpdate: {
     enabled: true,
     provider: "github",
-    owner: "sanskaryadav",
+    owner: "sanskarIN",
     repo: "metodo",
     releaseType: "release",
     checkForUpdatesInterval: 3600000, // 1 hour
@@ -341,7 +341,7 @@ export const linuxBuildConfig = {
     downloadUrl: "https://metodo.app/download/linux",
     releaseNotesUrl: "https://metodo.app/release-notes",
     supportUrl: "https://metodo.app/support",
-    issuesUrl: "https://github.com/sanskaryadav/metodo/issues",
+    issuesUrl: "https://github.com/sanskarIN/MeTodo/issues",
   },
 
   /**
@@ -350,7 +350,7 @@ export const linuxBuildConfig = {
   packageManager: {
     apt: {
       enabled: true,
-      repository: "ppa:sanskaryadav/metodo",
+      repository: "ppa:sanskarIN/MeTodo",
       gpgKey: "https://metodo.app/apt-key.gpg",
     },
     snap: {
@@ -363,7 +363,7 @@ export const linuxBuildConfig = {
     },
     aur: {
       enabled: true,
-      maintainer: "sanskaryadav",
+      maintainer: "sanskarIN",
     },
   },
 
