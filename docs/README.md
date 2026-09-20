@@ -3,8 +3,8 @@
 ## Copyright Notice
 ```
 =============================================================================
-(c) Copyright Sanskar Yadav. All rights reserved.
-Made by Sanskar Yadav.
+(c) Copyright Sanskar. All rights reserved.
+Made by Sanskar.
 =============================================================================
 ```
 
@@ -102,16 +102,16 @@ Plus custom theme creation with:
 ## Settings & Social Links
 
 ### Creator Links
-- **GitHub:** https://www.github.com/Sanskar-in
+- **GitHub:** https://www.github.com/sanskarIN
 - **LinkedIn:** https://www.linkedin.com/in/sanskar-in
 - **X (Twitter):** https://www.x.com/SanskarCode
 
 ### Contact
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
+- **Email:** sanskarin@outlook.in
 - **For:** Project inquiries, app development, games, and custom solutions
 
 ### Open Source
-- **Repository:** https://www.github.com/Sanskar-in/MeTodo
+- **Repository:** https://www.github.com/sanskarIN/MeTodo
 - **License:** MIT (or as specified in repository)
 
 ## Performance Characteristics
