@@ -1,7 +1,7 @@
 /**
  * =============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  * =============================================================================
  *
  * FILE: scripts/ci-cd-pipeline.ts
@@ -449,7 +449,7 @@ export const cicdPipelineConfig = {
     github: {
       enabled: true,
       createIssueOnFailure: true,
-      assignTo: "sanskaryadav",
+      assignTo: "sanskarIN",
     },
   },
 
@@ -504,7 +504,7 @@ export const cicdPipelineConfig = {
       branch: "main",
       autoDeployOnPush: false,
       requireApproval: true,
-      approvers: ["sanskaryadav"],
+      approvers: ["sanskarIN"],
     },
   },
 
