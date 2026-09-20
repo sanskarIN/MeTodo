@@ -1,8 +1,8 @@
 # MeTodo - FAQ & Troubleshooting Guide
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -62,13 +62,13 @@ Comprehensive FAQ and troubleshooting guide for MeTodo, covering common issues, 
 
 ### Q: How can I report bugs?
 
-**A:** Report bugs on GitHub Issues: https://github.com/Sanskar-in/MeTodo/issues
+**A:** Report bugs on GitHub Issues: https://www.github.com/sanskarIN/MeTodo/issues
 
 Or email: supportramsandesh@gmail.com
 
 ### Q: How can I suggest features?
 
-**A:** Suggest features on GitHub Discussions: https://github.com/Sanskar-in/MeTodo/discussions
+**A:** Suggest features on GitHub Discussions: https://www.github.com/sanskarIN/MeTodo/discussions
 
 Or email: supportramsandesh@gmail.com
 
@@ -91,7 +91,7 @@ Or email: supportramsandesh@gmail.com
 
 **Option 3: Build from Source**
 ```bash
-git clone https://github.com/Sanskar-in/MeTodo.git
+git clone https://www.github.com/sanskarIN/MeTodo.git
 cd metodo
 pnpm install
 pnpm dev
@@ -136,7 +136,7 @@ node --version
 
 **Still having issues?**
 - Email: supportramsandesh@gmail.com
-- GitHub Issues: https://github.com/Sanskar-in/MeTodo/issues
+- GitHub Issues: https://www.github.com/sanskarIN/MeTodo/issues
 
 ---
 
@@ -590,7 +590,7 @@ node --version
 
 **5. Report issue:**
 - Email: supportramsandesh@gmail.com
-- GitHub: https://github.com/Sanskar-in/MeTodo/issues
+- GitHub: https://www.github.com/sanskarIN/MeTodo/issues
 
 ### Q: Notifications not working. How do I fix it?
 
@@ -674,8 +674,8 @@ node --version
 - [Feature Guides](./features/)
 
 **Community:**
-- [GitHub Issues](https://github.com/Sanskar-in/MeTodo/issues)
-- [GitHub Discussions](https://github.com/Sanskar-in/MeTodo/discussions)
+- [GitHub Issues](https://www.github.com/sanskarIN/MeTodo/issues)
+- [GitHub Discussions](https://www.github.com/sanskarIN/MeTodo/discussions)
 
 **Direct Support:**
 - Email: supportramsandesh@gmail.com
@@ -684,8 +684,8 @@ node --version
 ### Contact Information
 
 **Creator:**
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
-- **GitHub:** https://github.com/Sanskar-in
+- **Email:** sanskarin@outlook.in
+- **GitHub:** https://www.github.com/sanskarIN
 - **Twitter:** https://x.com/SanskarCode
 - **LinkedIn:** https://linkedin.com/in/sanskar-in
 
@@ -717,4 +717,4 @@ node --version
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
