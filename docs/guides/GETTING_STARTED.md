@@ -422,8 +422,8 @@ MeTodo is designed to be accessible:
 
 ### Contact
 
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
-- **GitHub:** https://github.com/Sanskar-in
+- **Email:** sanskarin@outlook.in
+- **GitHub:** https://www.github.com/sanskarIN
 - **Twitter:** https://x.com/SanskarCode
 
 ---
@@ -465,6 +465,6 @@ MeTodo is designed to be accessible:
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 **Happy Task Managing!** 🚀
