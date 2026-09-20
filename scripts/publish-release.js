@@ -4,8 +4,8 @@
  * ============================================================================
  * MeTodo Release Publishing Script
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: Publish release information to the Update API
  *
