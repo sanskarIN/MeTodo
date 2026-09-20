@@ -2,8 +2,8 @@
  * ============================================================================
  * MeTodo Update Settings Screen
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: UI screen for managing update preferences and auto-update configuration
  *
