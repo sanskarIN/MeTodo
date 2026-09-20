@@ -65,7 +65,7 @@ jobs:
           NOTES+="## Installation\n"
           NOTES+="Download the appropriate package for your platform from the Releases page.\n\n"
           NOTES+="## Support\n"
-          NOTES+="For issues or questions, please visit: https://github.com/sanskaryadav/metodo/issues"
+          NOTES+="For issues or questions, please visit: https://github.com/sanskarIN/MeTodo/issues"
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo -e "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
