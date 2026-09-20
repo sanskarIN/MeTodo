@@ -3,8 +3,8 @@
 ################################################################################
 # MeTodo Socket.io Production Activation Script
 ################################################################################
-# (c) Copyright Sanskar Yadav. All rights reserved.
-# Made by Sanskar Yadav.
+# (c) Copyright Sanskar. All rights reserved.
+# Made by Sanskar.
 #
 # PURPOSE: Activate Socket.io in production environment
 #
@@ -49,8 +49,8 @@ cat > /home/ubuntu/metodo/server/_core/websocket-production.ts << 'EOFFILE'
  * ============================================================================
  * MeTodo Socket.io Production Server
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: Production Socket.io server with authentication and monitoring
  *
@@ -315,8 +315,8 @@ cat > /home/ubuntu/metodo/server/_core/server-socketio-integration.ts << 'EOFFIL
  * ============================================================================
  * Socket.io Integration with Express Server
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: Integrate Socket.io with existing Express server
  *
@@ -460,7 +460,7 @@ REDIS_PASSWORD=your-redis-password
 # Third-party Services
 SLACK_WEBHOOK_URL=<your-slack-webhook-url>
 GITHUB_TOKEN=ghp_your-github-token
-GITHUB_REPO=sanskaryadav/metodo
+GITHUB_REPO=sanskarIN/MeTodo
 EOFFILE
 
 echo -e "${GREEN}✓ Production environment configuration created${NC}"
@@ -752,7 +752,7 @@ For Socket.io production issues:
 
 - **Email**: supportramsandesh@gmail.com
 - **Socket.io Docs**: https://socket.io/docs/
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 EOFFILE
 
 echo -e "${GREEN}✓ Production guide created${NC}"
