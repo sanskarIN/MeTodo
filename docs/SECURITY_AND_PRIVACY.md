@@ -1,8 +1,8 @@
 # MeTodo - Security & Privacy Policy
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -163,7 +163,7 @@ Settings > Account > Delete Account
 
 **Found a Security Issue?**
 
-Please report to: **security@sanskaryadav.com**
+Please report to: **security@sanskarIN.com**
 
 **Do Not:**
 - Post publicly
@@ -494,7 +494,7 @@ Settings > Cloud > Sync > OFF
 
 **Address:**
 ```
-Sanskar Yadav
+Sanskar
 Privacy Team
 MeTodo Project
 ```
@@ -560,7 +560,7 @@ Your trust is important to us. We take privacy seriously and continuously improv
 **Version:** 1.0.0  
 **Status:** Active
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
