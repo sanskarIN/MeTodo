@@ -1,8 +1,8 @@
 # MeTodo - Error & Bug Reporting Guide
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -34,7 +34,7 @@ This document provides comprehensive guidelines for reporting errors, bugs, and 
 Before reporting a new issue, please check if it has already been reported:
 
 **1. Search GitHub Issues**
-- Visit: https://github.com/Sanskar-in/MeTodo/issues
+- Visit: https://www.github.com/sanskarIN/MeTodo/issues
 - Use search bar to find similar issues
 - Filter by labels (bug, crash, performance, etc.)
 
@@ -106,7 +106,7 @@ Test if issue persists
 - Best for detailed bug reports
 - Allows tracking and discussion
 - Visible to entire community
-- Link: https://github.com/Sanskar-in/MeTodo/issues
+- Link: https://www.github.com/sanskarIN/MeTodo/issues
 
 **Method 2: Email**
 - For sensitive issues
@@ -117,7 +117,7 @@ Test if issue persists
 **Method 3: GitHub Discussions**
 - For questions and discussions
 - For general feedback
-- Link: https://github.com/Sanskar-in/MeTodo/discussions
+- Link: https://www.github.com/sanskarIN/MeTodo/discussions
 
 ### Report Priority
 
@@ -772,7 +772,7 @@ If your issue is not resolved:
 3. **Social Media**
    - Contact on Twitter/X: @SanskarCode
    - LinkedIn: linkedin.com/in/sanskar-in
-   - GitHub: github.com/Sanskar-in
+   - GitHub: github.com/sanskarIN
 
 ---
 
@@ -782,11 +782,11 @@ If your issue is not resolved:
 
 **Email:** supportramsandesh@gmail.com
 
-**GitHub Issues:** https://github.com/Sanskar-in/MeTodo/issues
+**GitHub Issues:** https://www.github.com/sanskarIN/MeTodo/issues
 
-**GitHub Discussions:** https://github.com/Sanskar-in/MeTodo/discussions
+**GitHub Discussions:** https://www.github.com/sanskarIN/MeTodo/discussions
 
-**Creator Email:** sanskaryadavfrom2012to2026@gmail.com
+**Creator Email:** sanskarin@outlook.in
 
 ### Response Times
 
@@ -826,7 +826,7 @@ If your issue is not resolved:
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
