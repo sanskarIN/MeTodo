@@ -1,8 +1,8 @@
 # Contributing to MeTodo
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -65,7 +65,7 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 
 ```bash
 # 1. Fork the repository on GitHub
-# Visit: https://github.com/Sanskar-in/MeTodo
+# Visit: https://www.github.com/sanskarIN/MeTodo
 # Click "Fork" button
 
 # 2. Clone your fork
@@ -73,14 +73,14 @@ git clone https://github.com/YOUR-USERNAME/MeTodo.git
 cd metodo
 
 # 3. Add upstream remote
-git remote add upstream https://github.com/Sanskar-in/MeTodo.git
+git remote add upstream https://www.github.com/sanskarIN/MeTodo.git
 
 # 4. Verify remotes
 git remote -v
 # origin    https://github.com/YOUR-USERNAME/MeTodo.git (fetch)
 # origin    https://github.com/YOUR-USERNAME/MeTodo.git (push)
-# upstream  https://github.com/Sanskar-in/MeTodo.git (fetch)
-# upstream  https://github.com/Sanskar-in/MeTodo.git (push)
+# upstream  https://www.github.com/sanskarIN/MeTodo.git (fetch)
+# upstream  https://www.github.com/sanskarIN/MeTodo.git (push)
 ```
 
 ### Install Dependencies
@@ -577,21 +577,21 @@ Create documentation for:
 
 **Questions about Contributing:**
 - Email: supportramsandesh@gmail.com
-- GitHub Discussions: https://github.com/Sanskar-in/MeTodo/discussions
+- GitHub Discussions: https://www.github.com/sanskarIN/MeTodo/discussions
 
 **Found a Bug?**
-- GitHub Issues: https://github.com/Sanskar-in/MeTodo/issues
+- GitHub Issues: https://www.github.com/sanskarIN/MeTodo/issues
 - Email: supportramsandesh@gmail.com
 
 **Feature Suggestions?**
-- GitHub Discussions: https://github.com/Sanskar-in/MeTodo/discussions
-- GitHub Issues: https://github.com/Sanskar-in/MeTodo/issues
+- GitHub Discussions: https://www.github.com/sanskarIN/MeTodo/discussions
+- GitHub Issues: https://www.github.com/sanskarIN/MeTodo/issues
 
 ### Contact Information
 
 **Creator:**
-- **Email:** sanskaryadavfrom2012to2026@gmail.com
-- **GitHub:** https://github.com/Sanskar-in
+- **Email:** sanskarin@outlook.in
+- **GitHub:** https://www.github.com/sanskarIN
 - **LinkedIn:** https://linkedin.com/in/sanskar-in
 - **Twitter:** https://x.com/SanskarCode
 
@@ -620,7 +620,7 @@ By contributing to MeTodo, you agree that your contributions will be licensed un
 
 **Thank you for contributing to MeTodo! 🎉**
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
