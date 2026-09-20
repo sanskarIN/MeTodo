@@ -1,8 +1,8 @@
 # MeTodo - Project Roadmap & Future Development
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -235,7 +235,7 @@ MeTodo v1.0.0 includes all core features and is ready for production use.
 5. **Spread the Word** - Share MeTodo with others
 
 ### Getting Started
-1. Fork the repository: https://github.com/Sanskar-in/MeTodo
+1. Fork the repository: https://www.github.com/sanskarIN/MeTodo
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
@@ -246,9 +246,9 @@ MeTodo v1.0.0 includes all core features and is ready for production use.
 ## Support & Feedback
 
 ### Contact Information
-- **Creator Email:** sanskaryadavfrom2012to2026@gmail.com
+- **Creator Email:** sanskarin@outlook.in
 - **Support Email:** supportramsandesh@gmail.com
-- **GitHub:** https://github.com/Sanskar-in
+- **GitHub:** https://www.github.com/sanskarIN
 - **LinkedIn:** https://linkedin.com/in/sanskar-in
 - **X (Twitter):** https://x.com/SanskarCode
 
@@ -272,7 +272,7 @@ MeTodo v1.0.0 includes all core features and is ready for production use.
 MeTodo is open source and available under the MIT License. See the LICENSE file for details.
 
 ### Credits
-- **Creator:** Sanskar Yadav
+- **Creator:** Sanskar
 - **Framework:** React Native (Expo)
 - **Design:** Apple Human Interface Guidelines
 - **Community:** All contributors and users
