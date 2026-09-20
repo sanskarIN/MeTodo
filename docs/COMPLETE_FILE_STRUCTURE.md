@@ -1,6 +1,6 @@
 // =============================================================================
-// (c) Copyright Sanskar Yadav. All rights reserved.
-// Made by Sanskar Yadav.
+// (c) Copyright Sanskar. All rights reserved.
+// Made by Sanskar.
 // =============================================================================
 
 # Complete File Structure & Documentation
@@ -335,11 +335,11 @@ For questions or issues:
 
 **Email:** supportramsandesh@gmail.com
 
-**GitHub:** https://github.com/Sanskar-in/MeTodo
+**GitHub:** https://www.github.com/sanskarIN/MeTodo
 
 ---
 
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
