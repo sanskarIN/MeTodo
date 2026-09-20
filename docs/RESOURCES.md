@@ -1,8 +1,8 @@
 # MeTodo - Resources & External References
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -29,20 +29,20 @@ This comprehensive guide provides links to external resources, documentation, an
 
 | Resource | URL |
 |----------|-----|
-| GitHub Repository | https://github.com/Sanskar-in/MeTodo |
+| GitHub Repository | https://www.github.com/sanskarIN/MeTodo |
 | Documentation | https://metodo.app/docs |
 | Support Email | supportramsandesh@gmail.com |
-| Issue Tracker | https://github.com/Sanskar-in/MeTodo/issues |
-| Discussions | https://github.com/Sanskar-in/MeTodo/discussions |
+| Issue Tracker | https://www.github.com/sanskarIN/MeTodo/issues |
+| Discussions | https://www.github.com/sanskarIN/MeTodo/discussions |
 
 ### Creator
 
 | Platform | Profile |
 |----------|---------|
-| GitHub | https://github.com/Sanskar-in |
+| GitHub | https://www.github.com/sanskarIN |
 | LinkedIn | https://linkedin.com/in/sanskar-in |
 | Twitter/X | https://twitter.com/SanskarCode |
-| Email | sanskaryadavfrom2012to2026@gmail.com |
+| Email | sanskarin@outlook.in |
 
 ---
 
@@ -228,7 +228,7 @@ This comprehensive guide provides links to external resources, documentation, an
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
