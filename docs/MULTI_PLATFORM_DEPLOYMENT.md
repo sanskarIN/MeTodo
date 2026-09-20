@@ -758,8 +758,8 @@ If issues are found after release:
 - **Website**: https://metodo.app
 - **Documentation**: https://metodo.app/docs
 - **Support**: support@metodo.app
-- **Issues**: https://github.com/sanskaryadav/metodo/issues
-- **Releases**: https://github.com/sanskaryadav/metodo/releases
+- **Issues**: https://github.com/sanskarIN/MeTodo/issues
+- **Releases**: https://github.com/sanskarIN/MeTodo/releases
 
 ---
 
