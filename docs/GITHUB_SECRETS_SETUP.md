@@ -1,6 +1,6 @@
 # GitHub Secrets Configuration Guide
 
-**Copyright © Sanskar Yadav. All rights reserved.**
+**Copyright © Sanskar. All rights reserved.**
 
 ## Overview
 
@@ -289,4 +289,4 @@ For GitHub Secrets issues:
 
 - **Email**: supportramsandesh@gmail.com
 - **GitHub Docs**: https://docs.github.com/en/actions/security-guides/encrypted-secrets
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
