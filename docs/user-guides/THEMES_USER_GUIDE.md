@@ -1,8 +1,8 @@
 # MeTodo - Themes & Customization User Guide
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -795,7 +795,7 @@ MeTodo includes 50+ professionally designed themes organized by category:
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
