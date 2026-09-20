@@ -371,14 +371,14 @@ export default function SettingsScreen() {
         <View className="px-4 mb-8">
           <Text className="text-lg font-semibold text-foreground mb-4">Follow Creator on:</Text>
           <TouchableOpacity
-            onPress={() => handleOpenLink("https://www.github.com/Sanskar-in")}
+            onPress={() => handleOpenLink("https://www.github.com/sanskarIN")}
             style={{ backgroundColor: colors.surface }}
             className="rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
           >
             <Text className="text-2xl mr-3">🐙</Text>
             <View className="flex-1">
               <Text className="font-semibold text-foreground">GitHub</Text>
-              <Text className="text-sm text-muted">github.com/Sanskar-in</Text>
+              <Text className="text-sm text-muted">github.com/sanskarIN</Text>
             </View>
             <Text className="text-lg">→</Text>
           </TouchableOpacity>
@@ -441,13 +441,13 @@ export default function SettingsScreen() {
         {/* Open Source Info */}
         <View className="px-4 mb-8">
           <TouchableOpacity
-            onPress={() => handleOpenLink("https://www.github.com/Sanskar-in/MeTodo")}
+            onPress={() => handleOpenLink("https://www.github.com/sanskarIN/MeTodo")}
             style={{ backgroundColor: colors.surface }}
             className="rounded-xl p-4 active:opacity-80"
           >
             <Text className="text-sm text-muted mb-2">Open Source</Text>
             <Text className="font-semibold text-foreground">Source Code available at</Text>
-            <Text className="text-primary mt-1">github.com/Sanskar-in/MeTodo</Text>
+            <Text className="text-primary mt-1">github.com/sanskarIN/MeTodo</Text>
           </TouchableOpacity>
         </View>
 
