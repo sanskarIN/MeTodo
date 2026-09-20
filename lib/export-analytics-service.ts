@@ -1,6 +1,6 @@
 // =============================================================================
-// (c) Copyright Sanskar Yadav. All rights reserved.
-// Made by Sanskar Yadav.
+// (c) Copyright Sanskar. All rights reserved.
+// Made by Sanskar.
 // =============================================================================
 
 /**
@@ -288,7 +288,7 @@ export class ExportAnalyticsService {
 
     <div class="footer">
       <p>© 2026 MeTodo. All rights reserved.</p>
-      <p>Made by Sanskar Yadav | Support: supportramsandesh@gmail.com</p>
+      <p>Made by Sanskar | Support: supportramsandesh@gmail.com</p>
     </div>
   </div>
 </body>
