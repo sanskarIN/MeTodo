@@ -139,7 +139,7 @@ sudo su - metodo
 
 ```bash
 # Clone MeTodo repository
-git clone https://github.com/sanskaryadav/metodo.git
+git clone https://github.com/sanskarIN/MeTodo.git
 cd metodo
 
 # Install dependencies
@@ -630,7 +630,7 @@ sudo systemctl restart metodo
 For production deployment issues:
 
 - **Email**: supportramsandesh@gmail.com
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 - **Documentation**: https://metodo.app/docs
 - **Status Page**: https://status.metodo.app
 
@@ -658,4 +658,4 @@ For production deployment issues:
 
 **Last Updated**: 2026-07-03
 **Version**: 1.0.0
-**Author**: Sanskar Yadav
+**Author**: Sanskar
