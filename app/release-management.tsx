@@ -2,8 +2,8 @@
  * ============================================================================
  * MeTodo Release Management Dashboard
  * ============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  *
  * PURPOSE: Admin dashboard for managing releases and viewing deployment analytics
  *
