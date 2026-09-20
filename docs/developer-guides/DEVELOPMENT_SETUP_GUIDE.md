@@ -1,8 +1,8 @@
 # MeTodo - Development Setup Guide
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -248,7 +248,7 @@ expo --version
 cd ~/projects
 
 # Clone repository
-git clone https://github.com/Sanskar-in/MeTodo.git
+git clone https://www.github.com/sanskarIN/MeTodo.git
 
 # Navigate to project
 cd MeTodo
@@ -588,7 +588,7 @@ git commit -m "fix: resolve merge conflicts"
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
