@@ -3,8 +3,8 @@
 ################################################################################
 # MeTodo Database Setup Script
 ################################################################################
-# (c) Copyright Sanskar Yadav. All rights reserved.
-# Made by Sanskar Yadav.
+# (c) Copyright Sanskar. All rights reserved.
+# Made by Sanskar.
 #
 # PURPOSE: Set up database tables and run migrations
 #
@@ -448,7 +448,7 @@ For database setup issues:
 
 - **Email**: supportramsandesh@gmail.com
 - **Drizzle Docs**: https://orm.drizzle.team
-- **GitHub Issues**: https://github.com/sanskaryadav/metodo/issues
+- **GitHub Issues**: https://github.com/sanskarIN/MeTodo/issues
 EOFFILE
 
 echo -e "${GREEN}✓ Database setup guide created${NC}"
