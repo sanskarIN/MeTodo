@@ -1,8 +1,8 @@
 # MeTodo - Logo & Branding Assets
 
 ## =============================================================================
-## (c) Copyright Sanskar Yadav. All rights reserved.
-## Made by Sanskar Yadav.
+## (c) Copyright Sanskar. All rights reserved.
+## Made by Sanskar.
 ## =============================================================================
 
 ## FILE PURPOSE
@@ -177,7 +177,7 @@ For questions about logo usage, branding guidelines, or custom assets:
 
 **Email:** supportramsandesh@gmail.com
 
-**GitHub:** https://github.com/Sanskar-in/MeTodo
+**GitHub:** https://www.github.com/sanskarIN/MeTodo
 
 **Documentation:** See `docs/BRANDING_AND_IMAGES.md` for comprehensive branding documentation
 
@@ -186,7 +186,7 @@ For questions about logo usage, branding guidelines, or custom assets:
 **Last Updated:** June 29, 2026  
 **Version:** 1.0.0
 
-Made with ❤️ by Sanskar Yadav
+Made with ❤️ by Sanskar
 
 ---
 
