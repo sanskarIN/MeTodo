@@ -1,7 +1,7 @@
 /**
  * =============================================================================
- * (c) Copyright Sanskar Yadav. All rights reserved.
- * Made by Sanskar Yadav.
+ * (c) Copyright Sanskar. All rights reserved.
+ * Made by Sanskar.
  * =============================================================================
  *
  * FILE: build-config/windows-build.config.ts
@@ -152,7 +152,7 @@ export const windowsBuildConfig = {
     artifactName: "${productName}-${version}-${arch}.${ext}",
     displayName: "MeTodo",
     identityName: "MeTodo",
-    publisherDisplayName: "Sanskar Yadav",
+    publisherDisplayName: "Sanskar",
     backgroundColor: "#E6F4FE",
   },
 
@@ -174,7 +174,7 @@ export const windowsBuildConfig = {
   autoUpdate: {
     enabled: true,
     provider: "github",
-    owner: "sanskaryadav",
+    owner: "sanskarIN",
     repo: "metodo",
     releaseType: "release",
     checkForUpdatesInterval: 3600000, // 1 hour
@@ -189,7 +189,7 @@ export const windowsBuildConfig = {
     enabled: true,
     iconUrl: "https://metodo.app/icon.ico",
     setupIcon: "build/windows/icon.ico",
-    remoteReleases: "https://github.com/sanskaryadav/metodo/releases",
+    remoteReleases: "https://github.com/sanskarIN/MeTodo/releases",
   },
 
   /**
@@ -197,13 +197,13 @@ export const windowsBuildConfig = {
    */
   registry: {
     hive: "HKEY_LOCAL_MACHINE",
-    path: "Software\\Sanskar Yadav\\MeTodo",
+    path: "Software\\Sanskar\\MeTodo",
     values: {
       InstallPath: "{InstallPath}",
       UninstallString: "{UninstallString}",
       DisplayName: "MeTodo",
       DisplayVersion: "{Version}",
-      Publisher: "Sanskar Yadav",
+      Publisher: "Sanskar",
       URLInfoAbout: "https://metodo.app",
       HelpLink: "https://metodo.app/support",
       Contact: "support@metodo.app",
@@ -267,7 +267,7 @@ export const windowsBuildConfig = {
     displayIcon: "build/windows/icon.ico",
     displayName: "MeTodo",
     displayVersion: "{Version}",
-    publisher: "Sanskar Yadav",
+    publisher: "Sanskar",
     urlInfoAbout: "https://metodo.app",
     helpLink: "https://metodo.app/support",
     contact: "support@metodo.app",
@@ -323,7 +323,7 @@ export const windowsBuildConfig = {
     downloadUrl: "https://metodo.app/download/windows",
     releaseNotesUrl: "https://metodo.app/release-notes",
     supportUrl: "https://metodo.app/support",
-    issuesUrl: "https://github.com/sanskaryadav/metodo/issues",
+    issuesUrl: "https://github.com/sanskarIN/MeTodo/issues",
   },
 
   /**
