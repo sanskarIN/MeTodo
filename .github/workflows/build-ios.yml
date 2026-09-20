@@ -6,7 +6,7 @@ on:
       - main
       - develop
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
       - main
@@ -14,8 +14,8 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '22.13.0'
-  XCODE_VERSION: '16.4'
+  NODE_VERSION: "22.13.0"
+  XCODE_VERSION: "16.4"
 
 jobs:
   build:
@@ -43,7 +43,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -153,7 +153,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -214,6 +214,6 @@ jobs:
         if: always()
         with:
           status: ${{ job.status }}
-          text: 'iOS build ${{ job.status }}: ${{ github.ref }}'
+          text: "iOS build ${{ job.status }}: ${{ github.ref }}"
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
           fields: repo,message,commit,author
