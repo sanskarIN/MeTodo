@@ -6,7 +6,7 @@ on:
       - main
       - develop
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
       - main
@@ -14,8 +14,8 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '22.13.0'
-  XCODE_VERSION: '15.3'
+  NODE_VERSION: "22.13.0"
+  XCODE_VERSION: "15.3"
 
 jobs:
   build:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -35,13 +35,13 @@ jobs:
           xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 9.12.0
 
@@ -94,14 +94,14 @@ jobs:
           fi
 
       - name: Upload DMG to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo.dmg
           path: dist/metodo-*.dmg
           retention-days: 30
 
       - name: Upload App to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-app
           path: dist/metodo-*.app
@@ -114,7 +114,7 @@ jobs:
           cat SHA256SUMS
 
       - name: Upload checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: SHA256SUMS-macos
           path: dist/SHA256SUMS
@@ -139,16 +139,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 9.12.0
 
@@ -173,10 +173,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -209,6 +209,6 @@ jobs:
         if: always()
         with:
           status: ${{ job.status }}
-          text: 'macOS build ${{ job.status }}: ${{ github.ref }}'
+          text: "macOS build ${{ job.status }}: ${{ github.ref }}"
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
           fields: repo,message,commit,author
