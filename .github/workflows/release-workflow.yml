@@ -3,16 +3,16 @@ name: Automated Release Workflow
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., 1.0.0)'
+        description: "Release version (e.g., 1.0.0)"
         required: true
       releaseChannel:
-        description: 'Release channel'
+        description: "Release channel"
         required: true
-        default: 'stable'
+        default: "stable"
         type: choice
         options:
           - stable
@@ -33,7 +33,7 @@ jobs:
       releaseNotes: ${{ steps.notes.outputs.notes }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -76,19 +76,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
 
       - name: Install dependencies
         run: pnpm install
@@ -100,13 +100,13 @@ jobs:
         run: bash scripts/build-android.sh --version ${{ needs.prepare-release.outputs.version }} --aab
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-android-apk
           path: android/app/build/outputs/apk/release/*.apk
 
       - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-android-aab
           path: android/app/build/outputs/bundle/release/*.aab
@@ -117,13 +117,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
@@ -132,13 +132,13 @@ jobs:
         run: bash scripts/build-windows.sh --version ${{ needs.prepare-release.outputs.version }}
 
       - name: Upload EXE artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-windows-exe
           path: dist/windows/*.exe
 
       - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-windows-msi
           path: dist/windows/*.msi
@@ -149,13 +149,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: |
@@ -173,19 +173,19 @@ jobs:
         run: bash scripts/build-linux.sh --version ${{ needs.prepare-release.outputs.version }} --flatpak
 
       - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-linux-appimage
           path: dist/linux/*.AppImage
 
       - name: Upload Snap artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-linux-snap
           path: dist/linux/*.snap
 
       - name: Upload Flatpak artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-linux-flatpak
           path: dist/linux/*.flatpak
@@ -196,13 +196,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -216,7 +216,7 @@ jobs:
         run: bash scripts/build-ios.sh --version ${{ needs.prepare-release.outputs.version }}
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-ios-ipa
           path: dist/ios/*.ipa
@@ -227,13 +227,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -247,22 +247,30 @@ jobs:
         run: bash scripts/build-macos.sh --version ${{ needs.prepare-release.outputs.version }}
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-macos-dmg
           path: dist/macos/*.dmg
 
   create-release:
     name: Create Release
-    needs: [prepare-release, build-android, build-windows, build-linux, build-ios, build-macos]
+    needs:
+      [
+        prepare-release,
+        build-android,
+        build-windows,
+        build-linux,
+        build-ios,
+        build-macos,
+      ]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: release-artifacts
 
@@ -292,13 +300,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
