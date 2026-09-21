@@ -6,7 +6,7 @@ on:
       - main
       - develop
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
       - main
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '22.13.0'
+  NODE_VERSION: "22.13.0"
 
 jobs:
   build:
@@ -24,18 +24,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 9.12.0
 
@@ -81,35 +81,35 @@ jobs:
         run: pnpm dist:rpm
 
       - name: Upload AppImage to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-appimage
           path: dist/metodo-*.AppImage
           retention-days: 30
 
       - name: Upload Snap to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-snap
           path: dist/metodo_*.snap
           retention-days: 30
 
       - name: Upload Flatpak to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-flatpak
           path: dist/metodo-*.flatpak
           retention-days: 30
 
       - name: Upload DEB to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-deb
           path: dist/metodo_*.deb
           retention-days: 30
 
       - name: Upload RPM to artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: metodo-rpm
           path: dist/metodo-*.rpm
@@ -122,7 +122,7 @@ jobs:
           cat SHA256SUMS
 
       - name: Upload checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: SHA256SUMS-linux
           path: dist/SHA256SUMS
@@ -154,16 +154,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 9.12.0
 
@@ -188,10 +188,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -237,6 +237,6 @@ jobs:
         if: always()
         with:
           status: ${{ job.status }}
-          text: 'Linux build ${{ job.status }}: ${{ github.ref }}'
+          text: "Linux build ${{ job.status }}: ${{ github.ref }}"
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
           fields: repo,message,commit,author
