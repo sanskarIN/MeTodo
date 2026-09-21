@@ -762,3 +762,120 @@ Validation: TypeScript passed with zero errors; Vitest passed with 3 tests and 1
 - [x] Run final repository validation and push the complete code to the verified GitHub remote
 
 - [x] Redacted secret-shaped Slack webhook examples from publication documentation to satisfy GitHub push protection
+
+## Phase 24: Dependency and CI Security Hardening
+
+- [x] Review the 37 GitHub-reported dependency vulnerabilities and classify actionable upgrades
+- [x] Audit CI workflows and package configuration for security and reproducibility improvements
+- [x] Apply compatible dependency or workflow hardening without breaking Expo SDK 54
+- [x] Re-run TypeScript, Vitest, production bundle, and lint validation
+- [ ] Save a hardened release checkpoint and publish verified changes
+
+## Phase 25: Remaining Release Hardening
+
+- [x] Reassess unresolved transitive dependency advisories and safe upstream upgrade paths
+- [x] Harden GitHub Actions permissions and reproducibility without breaking release jobs
+- [x] Add repository security and branch-protection guidance
+- [x] Document native Android and iOS smoke-test requirements that cannot run in the sandbox
+- [x] Re-run application and workflow validation
+- [ ] Save a final remaining-work checkpoint and publish verified changes
+
+## Phase 26: Main Branch Protection
+
+- [x] Inspect current `main` branch protection and observed CI check names
+- [x] Apply least-privilege branch protection to `main` without guessing unavailable checks
+- [x] Verify the resulting GitHub rule and record the repository security change
+
+## Phase 27: CI Validation and Required Status Checks
+
+- [x] Inspect workflow dispatch options and current protected-branch settings
+- [x] Run the CI workflow and monitor every job to completion
+- [ ] Resolve any workflow failures and confirm a successful rerun
+- [x] Add only successful stable CI jobs as required checks for `main`
+- [x] Verify the protected branch and record the CI gate
+
+## Phase 28: CODEOWNERS and Code-Owner Review
+
+- [x] Inspect current ownership metadata and branch-protection review settings
+- [x] Add CODEOWNERS rules for workflows and security-sensitive project files
+- [x] Publish the CODEOWNERS policy on a review branch
+- [x] Require code-owner approval on protected `main`
+- [x] Verify the live repository rule and save a policy checkpoint
+
+## Phase 29: Native CI Workflow Repair
+
+- [x] Inspect Android, iOS, macOS, Linux, and Windows workflow failures
+- [x] Repair platform-specific CI assumptions without weakening checks
+- [x] Rerun all native workflows and confirm successful stable job contexts
+- [x] Add successful native contexts as required checks for `main`
+- [x] Verify branch protection and save the native CI checkpoint
+
+## Phase 30: Protected Release Readiness
+
+- [x] Inspect pull-request approvals, mergeability, and required owner actions
+- [x] Prepare credential-free release delivery improvements without bypassing protected-branch safeguards
+- [x] Validate and publish review-ready platform-delivery changes
+- [x] Save a release-readiness checkpoint and document the required owner merge action
+
+## Phase 31: Device Calendar Integration
+
+- [x] Inspect task deadline data and define calendar event behavior
+- [x] Add compatible calendar dependency, permissions, and platform fallback behavior
+- [x] Implement task-to-calendar create, update, and unlink controls
+- [x] Add focused tests and validate Android, iOS, and web-safe behavior
+- [x] Save a calendar integration checkpoint and publish review-ready changes
+
+## Phase 32: Calendar Selection
+
+- [x] Inspect existing task calendar links and selection-state patterns
+- [x] Add a native writable-calendar picker before task-event creation
+- [x] Persist the user’s preferred writable calendar for subsequent task links
+- [x] Add deterministic selection tests and validate platform fallbacks
+- [x] Save a calendar-selection checkpoint and publish review-ready changes
+
+## Phase 33: Bulk Device Calendar Linking
+
+- [x] Define eligible task rules and bulk-link result reporting
+- [x] Add an explicit native writable-calendar chooser for eligible task batches
+- [x] Persist successful calendar links without overwriting existing task links
+- [x] Add focused tests, documentation, and platform-safe validation
+- [x] Save a bulk-linking checkpoint and publish review-ready changes
+
+## Phase 34: Full Error and Bug Audit
+- [x] Inventory current repository, branch, dependency, workflow, and preview health
+- [x] Run comprehensive TypeScript, unit, lint, production, Expo configuration, web export, and diff validation
+- [x] Audit application routes, interactive handlers, persistence, native-only paths, and web fallbacks
+- [x] Audit calendar bulk-linking and individual-linking edge cases for data integrity and user feedback
+- [x] Audit GitHub workflows, protected pull-request status, and changed-file hygiene
+- [x] Fix all confirmed reproducible errors and bugs without bypassing main protection
+- [x] Add focused regression tests and documentation for each confirmed fix
+- [x] Re-run all available validation gates and inspect the final preview
+- [x] Publish granular verified fixes to the protected review branch
+- [x] Save the final audit checkpoint and document the required code-owner approval
+
+
+## Phase 34 Audit Follow-up — Web Styling and Runtime Noise
+
+- [x] Confirmed the reproducible web styling defect and restored the NativeWind stylesheet import in `app/_layout.tsx`
+- [x] Removed the unconditional theme-provider debug log from `lib/theme-provider.tsx`
+- [x] Searched application source for deprecated `pointerEvents` props; none are present, so the remaining notice is dependency/runtime-originated
+- [x] Verified the web preview renders styled cards, spacing, typography, controls, primary action, and tab navigation
+- [x] Confirmed the browser console is clean after the fix
+- [x] Passed TypeScript compilation, 21 Vitest tests with 1 existing skipped auth test, production server bundling, Expo lint, web export with 25 routes, and `git diff --check`
+- [x] Documented the remaining Expo web push-notification capability notice as non-actionable for this managed cross-platform build
+- [x] Published the verified fixes on a review branch without bypassing protected `main`
+
+
+## Phase 35: Multi-Platform CI Build Hardening
+
+- [x] Inspect failing Android, iOS, macOS, Linux, and Windows hosted workflow logs
+- [x] Install pnpm before enabling pnpm cache in all native workflow jobs
+- [x] Generate Android and iOS native projects during CI before platform compilation
+- [x] Restore missing Expo launcher assets required by `app.config.ts`
+- [x] Align Android CI with Expo SDK 54 NDK `27.1.12297006`
+- [x] Align iOS CI with the generated `MeTodo.xcworkspace` and `MeTodo` scheme
+- [x] Remove unsupported Electron and desktop-package commands from desktop workflows
+- [x] Remove unavailable Linux package dependencies and stale Snapcraft publishing
+- [x] Validate workflow parsing, stale-command removal, Expo prebuilds, TypeScript, tests, bundle, lint, web export, and diff checks
+- [x] Document platform build assumptions and remaining hosted-runner requirements
+- [x] Push the granular platform fixes and verify all hosted PR checks
