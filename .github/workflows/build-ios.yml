@@ -89,6 +89,8 @@ jobs:
             -configuration Debug \
             -derivedDataPath build \
             -archivePath build/MeTodo.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             archive
 
       - name: Build iOS app (Release)
