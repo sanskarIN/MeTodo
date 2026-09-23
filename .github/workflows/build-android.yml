@@ -194,6 +194,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      # pnpm must exist before setup-node resolves the pnpm cache path.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
