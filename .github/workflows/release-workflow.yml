@@ -267,7 +267,9 @@ jobs:
     name: Create Release
     needs: [prepare-release, build-android, build-windows, build-linux, build-ios, build-macos]
     runs-on: ubuntu-latest
-    if: always()
+    # Fail closed: never publish partial or failed platform artifacts.
+    # The older always() condition could publish even when installers failed.
+    if: ${{ success() }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
