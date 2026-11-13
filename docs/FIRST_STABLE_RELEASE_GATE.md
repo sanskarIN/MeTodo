@@ -57,3 +57,45 @@ web compatibility bundle is not a Windows EXE, macOS DMG, or Linux AppImage.
 - [Pull requests](https://github.com/sanskarIN/MeTodo/pulls)
 - [GitHub Actions](https://github.com/sanskarIN/MeTodo/actions)
 - [Release page](https://github.com/sanskarIN/MeTodo/releases)
+
+## Android and web publication workflow
+
+The first GitHub stable release explicitly targets a **production-signed Android
+APK** and a **browser distribution archive**. Windows EXE, Linux AppImage,
+macOS DMG, iOS IPA, and Google Play AAB are not promised by this first release.
+The workflow `.github/workflows/release-workflow.yml` does not publish when a
+tag is pushed.
+
+Before an owner can manually dispatch the workflow from protected `main`:
+
+1. Link the repository to its actual Expo/EAS project (`eas init` or
+   `eas build:configure`); commit the approved EAS project reference in app
+   configuration without credentials. Set up the Android signing key securely
+   through Expo managed credentials. Neither the token nor private key belongs
+   in source control.
+2. Configure the GitHub Actions secret `EXPO_TOKEN` and the `eas-signing`
+   environment for signed EAS builds.
+3. Configure the GitHub `stable-release` environment with independent
+   required reviewers. After successful installation testing and approved
+   release notes, set `METODO_RELEASE_APPROVED_SHA` to the exact reviewed
+   40-character `main` commit in GitHub Actions secrets. Change or delete
+   it after promotion so future commits cannot reuse the approval.
+4. Confirm required main checks, native APK smoke testing, backup restore,
+   permissions, accessibility, dependency review, and privacy requirements.
+5. Manually dispatch **First Stable Release (Android + Web)** from `main`
+   using the same commit in `approvedCommit`, the package version in
+   `version`, and the intended channel. The release job fails if approval is
+   missing, source or version differs, EAS signing fails, or either expected
+   artifact is missing/invalid.
+
+The EAS profile `production-apk` requests an installable Android release
+APK using managed signing. The standard `production` profile is reserved for
+store-targeted AAB distribution. A passing unsigned GitHub debug APK build
+does **not** satisfy the stable signing requirement.
+
+Do not mark the first release as completed until the signed build is installed
+and the GitHub release contains both real artifacts and SHA256SUMS.
+
+Official build format guidance:
+https://docs.expo.dev/build-reference/apk/
+https://docs.expo.dev/build/internal-distribution/

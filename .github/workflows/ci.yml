@@ -53,5 +53,11 @@ jobs:
       - name: Lint validation
         run: pnpm lint
 
+      - name: Validate release workflow syntax
+        run: pnpm exec prettier .github/workflows/release-workflow.yml --parser yaml > /dev/null
+
+      - name: Validate EAS download helper syntax
+        run: node --check scripts/download-eas-android-build.mjs
+
       - name: Web export validation
         run: pnpm exec expo export --platform web
