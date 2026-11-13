@@ -55,6 +55,21 @@ describe("SerializedStorageState", () => {
     expect(storage.setItem).not.toHaveBeenCalled();
   });
 
+  it("revives dates in nested persisted task fields", async () => {
+    const storage = memoryStorage(JSON.stringify([
+      { dueDate: "2026-11-14T09:00:00.000Z", reminders: [{ time: "2026-11-13T09:00:00.000Z" }] },
+    ]));
+    const dateFields = new Set(["dueDate", "time"]);
+    const revive = (key: string, value: unknown) =>
+      dateFields.has(key) && typeof value === "string" ? new Date(value) : value;
+    const state = new SerializedStorageState<Array<{ dueDate: Date; reminders: Array<{ time: Date }> }>>(
+      storage, "tasks", [], revive,
+    );
+    const [task] = await state.load();
+    expect(task.dueDate).toBeInstanceOf(Date);
+    expect(task.reminders[0].time).toBeInstanceOf(Date);
+  });
+
   it("supports atomic replacement for bulk updates", async () => {
     const storage = memoryStorage(JSON.stringify([1, 2]));
     const state = new SerializedStorageState<number[]>(storage, "tasks", []);
