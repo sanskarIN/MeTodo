@@ -17,12 +17,16 @@ export function selectBuild(raw) {
     : Array.isArray(data?.builds)
       ? data.builds
       : [data?.build ?? data];
-  const build = candidates.find((item) => String(item?.platform).toLowerCase() === "android") ?? candidates[0];
-  if (!build || String(build.status).toLowerCase() !== "finished") {
+  const build = candidates.find((item) => String(item?.platform).toLowerCase() === "android");
+  if (!build) {
+    throw new Error("EAS metadata contains no Android build");
+  }
+  if (String(build.status).toLowerCase() !== "finished") {
     throw new Error("EAS has not completed the Android build successfully");
   }
-  if (build.buildProfile && build.buildProfile !== "production-apk") {
-    throw new Error("EAS build does not use the production-apk profile");
+  // A missing profile is not evidence of production signing.
+  if (build.buildProfile !== "production-apk") {
+    throw new Error("EAS build must identify the production-apk signing profile");
   }
   const url = build.artifacts?.buildUrl;
   if (typeof url !== "string" || new URL(url).protocol !== "https:") {

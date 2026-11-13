@@ -27,6 +27,15 @@ describe("EAS signed Android artifact metadata", () => {
     expect(() => selectBuild({ ...good, buildProfile: "development" })).toThrow(/production-apk/);
   });
 
+  it("rejects a non-Android build even if its archive is a ZIP", () => {
+    expect(() => selectBuild([{ ...good, platform: "IOS" }])).toThrow(/no Android/i);
+  });
+
+  it("rejects metadata that does not identify the signing profile", () => {
+    const { buildProfile: _discarded, ...withoutProfile } = good;
+    expect(() => selectBuild(withoutProfile)).toThrow(/production-apk/);
+  });
+
   it("rejects missing or insecure build URLs", () => {
     expect(() => selectBuild({ ...good, artifacts: {} })).toThrow(/HTTPS/);
     expect(() => selectBuild({ ...good, artifacts: { buildUrl: "http://example.com/app.apk" } })).toThrow(/HTTPS/);
