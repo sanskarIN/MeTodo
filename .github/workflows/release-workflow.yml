@@ -189,6 +189,7 @@ jobs:
     permissions:
       contents: write
       actions: read
+      checks: read
     steps:
       - name: Require independent owner approval of exact commit
         shell: bash
@@ -200,6 +201,33 @@ jobs:
             echo "::error::Release approval secret missing or does not match this commit."
             exit 1
           fi
+
+      - name: Verify required protected-main checks succeeded
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100"             --jq '.check_runs[] | select(.status == "completed" and .conclusion == "success") | .name'             > passed-checks.txt
+          required_checks=(
+            "Validate MeTodo"
+            "Build Android APK"
+            "Test Android Build"
+            "Build iOS Simulator"
+            "Test iOS Build"
+            "Validate Linux Desktop"
+            "Test Linux Build"
+            "Validate macOS Desktop"
+            "Test macOS Build"
+            "Validate Windows Desktop"
+            "Test Windows Build"
+          )
+          for check in "${required_checks[@]}"; do
+            if ! grep -Fxq -- "$check" passed-checks.txt; then
+              echo "::error::Required protected-main check is not green: $check"
+              exit 1
+            fi
+          done
 
       - name: Download candidate artifacts
         uses: actions/download-artifact@v4
