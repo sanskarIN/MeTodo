@@ -1,5 +1,11 @@
 # MeTodo - Complete Task Management Mobile Application
 
+> **Release status (2026-11-13): first stable release not yet approved.** The
+> version string and earlier audit documents describe intended functionality,
+> but a published stable GitHub release and verified production installers are
+> not yet available. Follow the [first stable release gate](docs/FIRST_STABLE_RELEASE_GATE.md)
+> for current build, testing, signing and review requirements.
+
 ## Overview
 
 **MeTodo** is a comprehensive, production-ready mobile task management application built with React Native, Expo, and TypeScript. It provides a complete solution for personal task management with offline-first architecture, 50+ themes, advanced features, and extensive documentation.
