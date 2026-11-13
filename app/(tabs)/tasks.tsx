@@ -77,7 +77,7 @@ export default function TasksScreen() {
     );
     if (linksByTaskId.size > 0) {
       const updatedAt = new Date();
-      await updateTasks(tasks.map((task) => {
+      await updateTasks((currentTasks) => currentTasks.map((task) => {
         const link = linksByTaskId.get(task.id);
         return link ? { ...task, calendarEvent: link, updatedAt } : task;
       }));
