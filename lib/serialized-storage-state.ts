@@ -61,4 +61,17 @@ export class SerializedStorageState<T> {
   replace(next: T): Promise<T> {
     return this.mutate(() => next);
   }
+
+  /**
+   * Explicit, user-requested recovery/reset. Bypasses hydration so corrupt
+   * persisted JSON never makes the "clear data" action impossible.
+   */
+  reset(next: T): Promise<T> {
+    return this.enqueue(async () => {
+      await this.storage.setItem(this.key, JSON.stringify(next));
+      this.snapshot = next;
+      this.hydrated = true;
+      return next;
+    });
+  }
 }
