@@ -19,8 +19,9 @@
  * - Error handling and recovery
  */
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SerializedStorageState } from "@/lib/serialized-storage-state";
 import { Task, Category, AppSettings, AvatarCustomization, Theme } from "@/types";
 import { normalizeChartAnimationSettings } from "@/lib/chart-animation-settings";
 import { DEFAULT_CALENDAR_SELECTION_SETTINGS, normalizeCalendarSelectionSettings } from "@/lib/calendar-selection-settings";
@@ -76,6 +77,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [avatar, setAvatar] = useState<AvatarCustomization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const taskStoreRef = useRef<SerializedStorageState<Task[]> | null>(null);
+  if (!taskStoreRef.current) {
+    taskStoreRef.current = new SerializedStorageState<Task[]>(AsyncStorage, "metodo_tasks", []);
+  }
 
   // Load data from AsyncStorage on mount
   useEffect(() => {
@@ -85,13 +90,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const loadData = async () => {
     try {
       const [tasksData, categoriesData, settingsData, avatarData] = await Promise.all([
-        AsyncStorage.getItem("metodo_tasks"),
+        taskStoreRef.current!.load(),
         AsyncStorage.getItem("metodo_categories"),
         AsyncStorage.getItem("metodo_settings"),
         AsyncStorage.getItem("metodo_avatar"),
       ]);
 
-      if (tasksData) setTasks(JSON.parse(tasksData));
+      setTasks(tasksData);
       if (categoriesData) setCategories(JSON.parse(categoriesData));
       if (settingsData) {
         const storedSettings = JSON.parse(settingsData);
@@ -110,43 +115,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Queue writes against the most recent persisted state. Callers receive
+  // storage failures instead of silently navigating away after data loss.
   const addTask = async (task: Task) => {
-    try {
-      const updatedTasks = [...tasks, task];
-      setTasks(updatedTasks);
-      await AsyncStorage.setItem("metodo_tasks", JSON.stringify(updatedTasks));
-    } catch (error) {
-      console.error("Error adding task:", error);
-    }
+    const next = await taskStoreRef.current!.mutate((current) => [...current, task]);
+    setTasks(next);
   };
 
   const updateTask = async (task: Task) => {
-    try {
-      const updatedTasks = tasks.map((t) => (t.id === task.id ? task : t));
-      setTasks(updatedTasks);
-      await AsyncStorage.setItem("metodo_tasks", JSON.stringify(updatedTasks));
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
+    const next = await taskStoreRef.current!.mutate((current) =>
+      current.map((existing) => (existing.id === task.id ? task : existing)),
+    );
+    setTasks(next);
   };
 
   const updateTasks = async (nextTasks: Task[]) => {
-    try {
-      setTasks(nextTasks);
-      await AsyncStorage.setItem("metodo_tasks", JSON.stringify(nextTasks));
-    } catch (error) {
-      console.error("Error updating tasks:", error);
-    }
+    const next = await taskStoreRef.current!.replace(nextTasks);
+    setTasks(next);
   };
 
   const deleteTask = async (id: string) => {
-    try {
-      const updatedTasks = tasks.filter((t) => t.id !== id);
-      setTasks(updatedTasks);
-      await AsyncStorage.setItem("metodo_tasks", JSON.stringify(updatedTasks));
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
+    const next = await taskStoreRef.current!.mutate((current) =>
+      current.filter((task) => task.id !== id),
+    );
+    setTasks(next);
   };
 
   const addCategory = async (category: Category) => {
@@ -219,8 +211,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const clearAllData = async () => {
     try {
+      await taskStoreRef.current!.replace([]);
       await AsyncStorage.multiRemove([
-        "metodo_tasks",
         "metodo_categories",
         "metodo_settings",
         "metodo_avatar",
