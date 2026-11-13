@@ -99,15 +99,22 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadData = async () => {
+    // Hydrate task data independently. Waiting on unrelated settings reads can
+    // otherwise overwrite newer task updates with a stale initial snapshot.
     try {
-      const [tasksData, categoriesData, settingsData, avatarData] = await Promise.all([
-        taskStoreRef.current!.load(),
+      const tasksData = await taskStoreRef.current!.load();
+      setTasks(tasksData);
+    } catch (error) {
+      console.error("Error loading tasks:", error);
+    }
+
+    try {
+      const [categoriesData, settingsData, avatarData] = await Promise.all([
         AsyncStorage.getItem("metodo_categories"),
         AsyncStorage.getItem("metodo_settings"),
         AsyncStorage.getItem("metodo_avatar"),
       ]);
 
-      setTasks(tasksData);
       if (categoriesData) setCategories(JSON.parse(categoriesData));
       if (settingsData) {
         const storedSettings = JSON.parse(settingsData);
@@ -224,13 +231,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const clearAllData = async () => {
     try {
-      await taskStoreRef.current!.replace([]);
+      // Clearing must remain possible even if task JSON cannot be parsed.
+      await taskStoreRef.current!.reset([]);
+      setTasks([]);
       await AsyncStorage.multiRemove([
         "metodo_categories",
         "metodo_settings",
         "metodo_avatar",
       ]);
-      setTasks([]);
       setCategories(DEFAULT_CATEGORIES);
       setSettings(DEFAULT_SETTINGS);
       setAvatar(null);
