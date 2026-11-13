@@ -42,11 +42,16 @@ export default function TasksScreen() {
   };
 
   const handleToggleTask = async (task: Task) => {
-    await updateTask({
-      ...task,
-      completed: !task.completed,
-      updatedAt: new Date(),
-    });
+    try {
+      await updateTask({
+        ...task,
+        completed: !task.completed,
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error("Could not save task completion:", error);
+      Alert.alert("Unable to save task", "Your change was not saved. Please try again.");
+    }
   };
 
   const openBulkCalendarPicker = async () => {
