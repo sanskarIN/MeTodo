@@ -37,7 +37,7 @@ interface TaskContextType {
   avatar: AvatarCustomization | null;
   addTask: (task: Task) => Promise<void>;
   updateTask: (task: Task) => Promise<void>;
-  updateTasks: (tasks: Task[]) => Promise<void>;
+  updateTasks: (tasks: Task[] | ((current: Task[]) => Task[])) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   addCategory: (category: Category) => Promise<void>;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -49,6 +49,17 @@ interface TaskContextType {
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
+
+const TASK_DATE_KEYS = new Set([
+  "dueDate", "createdAt", "updatedAt", "time", "endDate",
+  "linkedAt", "lastSyncedAt",
+]);
+
+function reviveTaskDates(key: string, value: unknown): unknown {
+  if (!TASK_DATE_KEYS.has(key) || typeof value !== "string") return value;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date;
+}
 
 const DEFAULT_CATEGORIES: Category[] = [
   { id: "1", name: "Work", color: "#0a7ea4", icon: "briefcase" },
@@ -79,7 +90,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const taskStoreRef = useRef<SerializedStorageState<Task[]> | null>(null);
   if (!taskStoreRef.current) {
-    taskStoreRef.current = new SerializedStorageState<Task[]>(AsyncStorage, "metodo_tasks", []);
+    taskStoreRef.current = new SerializedStorageState<Task[]>(AsyncStorage, "metodo_tasks", [], reviveTaskDates);
   }
 
   // Load data from AsyncStorage on mount
@@ -129,8 +140,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setTasks(next);
   };
 
-  const updateTasks = async (nextTasks: Task[]) => {
-    const next = await taskStoreRef.current!.replace(nextTasks);
+  const updateTasks = async (nextTasks: Task[] | ((current: Task[]) => Task[])) => {
+    const next = await taskStoreRef.current!.mutate((current) =>
+      typeof nextTasks === "function" ? nextTasks(current) : nextTasks,
+    );
     setTasks(next);
   };
 
