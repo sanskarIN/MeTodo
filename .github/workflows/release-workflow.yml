@@ -1,18 +1,20 @@
 name: Automated Release Workflow
 
+# Stable publication is intentionally manual: a pushed version tag must never
+# automatically publish an unverified build or a partly packaged release.
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       version:
         description: 'Release version (e.g., 1.0.0)'
         required: true
+      approvedCommit:
+        description: 'Full 40-character SHA of the reviewed protected main commit'
+        required: true
       releaseChannel:
         description: 'Release channel'
         required: true
-        default: 'stable'
+        default: 'beta'
         type: choice
         options:
           - stable
@@ -39,6 +41,27 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Fail closed unless approved main commit and version match
+        shell: bash
+        env:
+          APPROVED_COMMIT: ${{ inputs.approvedCommit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Dispatch releases from the protected main branch only."
+            exit 1
+          fi
+          if [[ ! "$APPROVED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || [[ "$APPROVED_COMMIT" != "$GITHUB_SHA" ]]; then
+            echo "::error::The reviewed SHA must match the exact checkout commit."
+            exit 1
+          fi
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$RELEASE_VERSION" != "$PACKAGE_VERSION" ]]; then
+            echo "::error::Requested release version differs from package.json."
+            exit 1
+          fi
 
       - name: Extract version
         id: version
@@ -112,12 +135,14 @@ jobs:
         with:
           name: metodo-android-apk
           path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: metodo-android-aab
           path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
 
   build-windows:
     name: Build Windows
@@ -144,12 +169,14 @@ jobs:
         with:
           name: metodo-windows-exe
           path: dist/windows/*.exe
+          if-no-files-found: error
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
         with:
           name: metodo-windows-msi
           path: dist/windows/*.msi
+          if-no-files-found: error
 
   build-linux:
     name: Build Linux
@@ -185,18 +212,21 @@ jobs:
         with:
           name: metodo-linux-appimage
           path: dist/linux/*.AppImage
+          if-no-files-found: error
 
       - name: Upload Snap artifact
         uses: actions/upload-artifact@v4
         with:
           name: metodo-linux-snap
           path: dist/linux/*.snap
+          if-no-files-found: error
 
       - name: Upload Flatpak artifact
         uses: actions/upload-artifact@v4
         with:
           name: metodo-linux-flatpak
           path: dist/linux/*.flatpak
+          if-no-files-found: error
 
   build-ios:
     name: Build iOS
@@ -228,6 +258,7 @@ jobs:
         with:
           name: metodo-ios-ipa
           path: dist/ios/*.ipa
+          if-no-files-found: error
 
   build-macos:
     name: Build macOS
@@ -259,6 +290,7 @@ jobs:
         with:
           name: metodo-macos-dmg
           path: dist/macos/*.dmg
+          if-no-files-found: error
 
   create-release:
     permissions:
@@ -267,10 +299,23 @@ jobs:
     name: Create Release
     needs: [prepare-release, build-android, build-windows, build-linux, build-ios, build-macos]
     runs-on: ubuntu-latest
+    # Repository owner must configure required reviewers for this environment.
+    environment: stable-release
     # Fail closed: never publish partial or failed platform artifacts.
     # The older always() condition could publish even when installers failed.
     if: ${{ success() }}
     steps:
+      - name: Verify separate owner release approval
+        shell: bash
+        env:
+          APPROVED_RELEASE_SHA: ${{ secrets.METODO_RELEASE_APPROVED_SHA }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$APPROVED_RELEASE_SHA" ]] || [[ "$APPROVED_RELEASE_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::Stable release approval secret must equal the current reviewed main SHA."
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -281,8 +326,12 @@ jobs:
 
       - name: Generate checksums
         run: |
+          set -euo pipefail
           cd release-artifacts
-          find . -type f -exec sha256sum {} \; > SHA256SUMS
+          # The release should never contain an empty artifact manifest.
+          test "$(find . -type f | wc -l)" -gt 0
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          test -s SHA256SUMS
           cat SHA256SUMS
 
       - name: Create GitHub Release
