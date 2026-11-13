@@ -43,8 +43,8 @@ jobs:
       - name: Verify protected main and exact version
         shell: bash
         env:
-          APPROVED_SHA: \${{ inputs.approvedCommit }}
-          RELEASE_VERSION: \${{ inputs.version }}
+          APPROVED_SHA: ${{ inputs.approvedCommit }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
@@ -97,7 +97,7 @@ jobs:
       - name: Package web distribution
         shell: bash
         env:
-          RELEASE_VERSION: \${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           test -f dist/web/index.html
@@ -140,7 +140,7 @@ jobs:
       - name: Require configured Expo authorization
         shell: bash
         env:
-          EXPO_TOKEN: \${{ secrets.EXPO_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           if [[ -z "$EXPO_TOKEN" ]]; then
             echo "::error::Configure EXPO_TOKEN and EAS project/signing credentials before a signed build."
@@ -150,7 +150,7 @@ jobs:
       - name: Request signed installable APK
         shell: bash
         env:
-          EXPO_TOKEN: \${{ secrets.EXPO_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
           npx --yes eas-cli@latest build \
@@ -163,7 +163,7 @@ jobs:
       - name: Verify and download EAS build
         shell: bash
         env:
-          RELEASE_VERSION: \${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           mkdir -p release-android
@@ -193,7 +193,7 @@ jobs:
       - name: Require independent owner approval of exact commit
         shell: bash
         env:
-          APPROVED_RELEASE_SHA: \${{ secrets.METODO_RELEASE_APPROVED_SHA }}
+          APPROVED_RELEASE_SHA: ${{ secrets.METODO_RELEASE_APPROVED_SHA }}
         run: |
           set -euo pipefail
           if [[ -z "$APPROVED_RELEASE_SHA" ]] || [[ "$APPROVED_RELEASE_SHA" != "$GITHUB_SHA" ]]; then
@@ -211,7 +211,7 @@ jobs:
       - name: Validate artifacts and calculate checksums
         shell: bash
         env:
-          RELEASE_VERSION: \${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           test -s "release-assets/MeTodo-v$RELEASE_VERSION-android.apk"
@@ -226,12 +226,12 @@ jobs:
       - name: Publish release for reviewed source
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v\${{ inputs.version }}
-          target_commitish: \${{ github.sha }}
-          name: MeTodo v\${{ inputs.version }}
+          tag_name: v${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: MeTodo v${{ inputs.version }}
           generate_release_notes: true
-          prerelease: \${{ inputs.releaseChannel != 'stable' }}
-          make_latest: \${{ inputs.releaseChannel == 'stable' }}
+          prerelease: ${{ inputs.releaseChannel != 'stable' }}
+          make_latest: ${{ inputs.releaseChannel == 'stable' }}
           draft: false
           fail_on_unmatched_files: true
           files: |
