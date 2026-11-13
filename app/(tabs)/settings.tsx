@@ -182,6 +182,17 @@ export default function SettingsScreen() {
           <Text className="text-sm text-muted">Customize your experience</Text>
         </View>
 
+        {/* Offline-first release scope: do not imply cloud sync exists. */}
+        <View className="px-4 mb-6">
+          <View className="rounded-xl p-4" style={{ backgroundColor: colors.surface }}>
+            <Text className="text-sm font-semibold text-foreground">Local-first data</Text>
+            <Text className="text-xs text-muted mt-2">
+              Tasks are stored on this device. Cross-device cloud synchronization is not yet
+              available. Keep a backup before moving to another device or clearing app data.
+            </Text>
+          </View>
+        </View>
+
         {/* Theme Selection */}
         <View className="px-4 mb-8">
           <Text className="text-lg font-semibold text-foreground mb-4">Themes</Text>

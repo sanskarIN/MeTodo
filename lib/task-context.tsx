@@ -244,6 +244,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setAvatar(null);
     } catch (error) {
       console.error("Error clearing data:", error);
+      // The Settings screen must not report success after a failed erase.
+      throw error;
     }
   };
 
