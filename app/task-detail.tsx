@@ -29,13 +29,15 @@ export default function TaskDetailScreen() {
   }, [taskId, tasks]);
 
   const handleSave = async () => {
-    if (editedTask) {
-      await updateTask({
-        ...editedTask,
-        updatedAt: new Date(),
-      });
-      setTask(editedTask);
+    if (!editedTask) return;
+    const next = { ...editedTask, updatedAt: new Date() };
+    try {
+      await updateTask(next);
+      setTask(next);
       setIsEditing(false);
+    } catch (error) {
+      console.error("Unable to save task edits:", error);
+      Alert.alert("Unable to save task", "Your edits were not saved. Please try again.");
     }
   };
 
@@ -46,8 +48,13 @@ export default function TaskDetailScreen() {
         text: "Delete",
         onPress: async () => {
           if (task) {
-            await deleteTask(task.id);
-            router.back();
+            try {
+              await deleteTask(task.id);
+              router.back();
+            } catch (error) {
+              console.error("Unable to delete task:", error);
+              Alert.alert("Unable to delete task", "The task was not deleted. Please try again.");
+            }
           }
         },
       },
@@ -55,13 +62,14 @@ export default function TaskDetailScreen() {
   };
 
   const handleToggleComplete = async () => {
-    if (task) {
-      await updateTask({
-        ...task,
-        completed: !task.completed,
-        updatedAt: new Date(),
-      });
-      setTask({ ...task, completed: !task.completed });
+    if (!task) return;
+    const next = { ...task, completed: !task.completed, updatedAt: new Date() };
+    try {
+      await updateTask(next);
+      setTask(next);
+    } catch (error) {
+      console.error("Unable to update task completion:", error);
+      Alert.alert("Unable to save task", "The completion change was not saved. Please try again.");
     }
   };
 
