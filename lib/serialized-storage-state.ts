@@ -19,6 +19,7 @@ export class SerializedStorageState<T> {
     private readonly storage: KeyValueStorage,
     private readonly key: string,
     initialValue: T,
+    private readonly reviver?: (key: string, value: unknown) => unknown,
   ) {
     this.snapshot = initialValue;
   }
@@ -28,7 +29,7 @@ export class SerializedStorageState<T> {
     const saved = await this.storage.getItem(this.key);
     if (saved !== null) {
       // Fail closed on corrupt data rather than overwriting it with defaults.
-      this.snapshot = JSON.parse(saved) as T;
+      this.snapshot = JSON.parse(saved, this.reviver) as T;
     }
     this.hydrated = true;
   }
