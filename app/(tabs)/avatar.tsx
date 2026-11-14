@@ -1,9 +1,9 @@
-import { ScrollView, Text, View, TouchableOpacity, Pressable } from "react-native";
+import { Alert, ScrollView, Text, View, TouchableOpacity, Pressable } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useTaskContext } from "@/lib/task-context";
 import { useColors } from "@/hooks/use-colors";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const HAIR_STYLES = ["short", "long", "curly", "straight", "bald"];
 const HAIR_COLORS = ["#000000", "#8B4513", "#FFD700", "#FF6347", "#4169E1"];
@@ -14,13 +14,23 @@ const SKIN_TONES = ["#FDBCB4", "#E8B4A8", "#D4A574", "#A0826D", "#6B4423"];
 
 export default function AvatarScreen() {
   const router = useRouter();
-  const { avatar, saveAvatar } = useTaskContext();
+  const { avatar, saveAvatar, dataReadiness } = useTaskContext();
   const colors = useColors();
 
   const [hair, setHair] = useState(avatar?.hair || { style: "short", color: "#000000" });
   const [eyes, setEyes] = useState(avatar?.eyes || { shape: "round", color: "#8B4513" });
   const [accessories, setAccessories] = useState(avatar?.accessories || ["none"]);
   const [skinTone, setSkinTone] = useState(avatar?.skinTone || "#FDBCB4");
+
+  // The avatar screen may render before AsyncStorage hydration finishes.
+  // Rehydrate editor controls from the saved avatar exactly when it loads.
+  useEffect(() => {
+    if (dataReadiness !== "ready") return;
+    setHair(avatar?.hair || { style: "short", color: "#000000" });
+    setEyes(avatar?.eyes || { shape: "round", color: "#8B4513" });
+    setAccessories(avatar?.accessories || ["none"]);
+    setSkinTone(avatar?.skinTone || "#FDBCB4");
+  }, [avatar, dataReadiness]);
 
   const handleSaveAvatar = async () => {
     const newAvatar = {
@@ -32,9 +42,37 @@ export default function AvatarScreen() {
       skinTone,
       createdAt: avatar?.createdAt || new Date(),
     };
-    await saveAvatar(newAvatar);
-    router.back();
+    try {
+      await saveAvatar(newAvatar);
+      router.back();
+    } catch (error) {
+      console.error("Avatar save failed:", error);
+      Alert.alert("Unable to save avatar", "Your avatar was not saved. Please try again.");
+    }
   };
+
+  if (dataReadiness !== "ready") {
+    return (
+      <ScreenContainer className="bg-background">
+        <View className="p-6">
+          <Text className="text-xl font-bold text-foreground">
+            {dataReadiness === "loading" ? "Loading saved avatar…" : "Saved data needs recovery"}
+          </Text>
+          <Text className="text-muted mt-3">
+            {dataReadiness === "loading"
+              ? "Loading saved appearance settings."
+              : "Avatar changes cannot be saved until local data is repaired."}
+          </Text>
+          {dataReadiness === "error" && (
+            <Pressable onPress={() => router.push("/backup-restore")}
+              accessibilityRole="button" className="bg-primary rounded-lg p-3 mt-4">
+              <Text className="text-white font-semibold">Open backup recovery</Text>
+            </Pressable>
+          )}
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer className="bg-background">
