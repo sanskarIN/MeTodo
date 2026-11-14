@@ -1,4 +1,4 @@
-name: Test patched transitive dependency overrides
+name: Verify secure Metro image-size adapter
 
 # This workflow only executes when it is first added on the disposable security
 # analysis branch. Its commit to package files cannot recursively re-trigger it.
@@ -37,6 +37,8 @@ jobs:
         run: pnpm update --depth 100
       - name: Validate frozen install
         run: pnpm install --frozen-lockfile
+      - name: Validate Metro adapter syntax
+        run: node --check vendor/image-size-compat/index.cjs
       - name: Validate source TypeScript with patched dependencies
         run: pnpm check
       - name: Run regression tests
