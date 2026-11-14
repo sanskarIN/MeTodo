@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
@@ -29,9 +29,22 @@ export default function BackupRestoreScreen() {
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       } else {
-        await Share.share({
-          title: "Private MeTodo backup",
-          message: backup,
+        // Share an actual JSON file, not an arbitrarily long text message.
+        // This preserves imported data types and avoids app share-text limits.
+        const [{ File, Paths }, Sharing] = await Promise.all([
+          import("expo-file-system"),
+          import("expo-sharing"),
+        ]);
+        if (!(await Sharing.isAvailableAsync())) {
+          throw new Error("File sharing is unavailable on this device");
+        }
+        const filename = "MeTodo-backup-" + Date.now() + ".json";
+        const file = new File(Paths.cache, filename);
+        file.create();
+        await file.write(backup);
+        await Sharing.shareAsync(file.uri, {
+          dialogTitle: "Save private MeTodo JSON backup",
+          mimeType: "application/json",
         });
       }
     } catch (error) {
@@ -49,31 +62,58 @@ export default function BackupRestoreScreen() {
     }
     Alert.alert(
       "Private backup",
-      "This backup includes task titles, notes and settings. Share it only to a private, secure destination.",
+      "This file contains private task titles, notes and settings. Save it to a private, secure destination, then verify the JSON file is present.",
       [{ text: "Cancel", style: "cancel" },
         { text: "Share backup", onPress: () => { void shareBackup(); } }],
     );
   };
 
-  const chooseBackupFile = () => {
-    if (Platform.OS !== "web") return;
-    const picker = document.createElement("input");
-    picker.type = "file";
-    picker.accept = ".json,application/json";
-    picker.onchange = async () => {
-      const selected = picker.files?.[0];
-      if (!selected) return;
-      try {
-        if (selected.size > 8 * 1024 * 1024) {
-          window.alert("Backup file exceeds the 8 MiB safety limit.");
-          return;
+  const chooseBackupFile = async () => {
+    if (Platform.OS === "web") {
+      const picker = document.createElement("input");
+      picker.type = "file";
+      picker.accept = ".json,application/json";
+      picker.onchange = async () => {
+        const selected = picker.files?.[0];
+        if (!selected) return;
+        try {
+          if (selected.size > 8 * 1024 * 1024) {
+            window.alert("Backup file exceeds the 8 MiB safety limit.");
+            return;
+          }
+          const content = await selected.text();
+          parseLocalBackup(content);
+          setBackupContent(content);
+        } catch (error) {
+          window.alert(error instanceof Error ? error.message : "Could not read backup.");
         }
-        setBackupContent(await selected.text());
-      } catch (error) {
-        window.alert(error instanceof Error ? error.message : "Could not read backup.");
+      };
+      picker.click();
+      return;
+    }
+    try {
+      const [DocumentPicker, { File }] = await Promise.all([
+        import("expo-document-picker"),
+        import("expo-file-system"),
+      ]);
+      const selection = await DocumentPicker.getDocumentAsync({
+        type: ["application/json", "text/plain", "application/octet-stream"],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (selection.canceled) return;
+      const chosen = selection.assets[0];
+      if (!chosen) throw new Error("No file selected");
+      if (chosen.size !== undefined && chosen.size > 8 * 1024 * 1024) {
+        throw new Error("Backup exceeds the 8 MiB safety limit");
       }
-    };
-    picker.click();
+      const file = new File(chosen.uri);
+      const content = await file.text();
+      parseLocalBackup(content);
+      setBackupContent(content);
+    } catch (error) {
+      Alert.alert("Unable to load backup", error instanceof Error ? error.message : "Please choose a valid JSON file.");
+    }
   };
 
   const pasteBackup = async () => {
@@ -149,7 +189,7 @@ export default function BackupRestoreScreen() {
           <Pressable disabled={busy || dataReadiness !== "ready"} onPress={requestShare}
             accessibilityRole="button" style={{ backgroundColor: colors.primary, padding: 13, borderRadius: 9 }}>
             <Text style={{ color: "#fff", fontWeight: "600" }}>
-              {Platform.OS === "web" ? "Download JSON backup" : "Share private JSON backup"}
+              {Platform.OS === "web" ? "Download JSON backup" : "Save private JSON file"}
             </Text>
           </Pressable>
         </View>
@@ -159,12 +199,10 @@ export default function BackupRestoreScreen() {
             Paste the JSON backup below. Restoring replaces local data after confirmation.
             Pending recovery automatically retries if a write is interrupted.
           </Text>
-          {Platform.OS === "web" && (
-            <Pressable disabled={busy} onPress={chooseBackupFile}
-              accessibilityRole="button" style={{ padding: 10, borderRadius: 9, borderWidth: 1, borderColor: colors.border }}>
-              <Text className="text-foreground">Choose a JSON backup file</Text>
-            </Pressable>
-          )}
+          <Pressable disabled={busy} onPress={() => { void chooseBackupFile(); }}
+            accessibilityRole="button" style={{ padding: 10, borderRadius: 9, borderWidth: 1, borderColor: colors.border }}>
+            <Text className="text-foreground">Choose a saved JSON backup file</Text>
+          </Pressable>
           <Pressable disabled={busy} onPress={() => { void pasteBackup(); }}
             accessibilityRole="button" style={{ padding: 10, borderRadius: 9, borderWidth: 1, borderColor: colors.border }}>
             <Text className="text-foreground">Paste from clipboard</Text>
