@@ -1,0 +1,60 @@
+name: Trial native JSON backup dependencies
+
+# Isolated compatibility check. This trial workflow cannot publish releases.
+on:
+  push:
+    branches:
+      - trial/android-json-file-backup-20261114
+    paths:
+      - .github/workflows/trial-native-backup.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Install SDK-compatible file APIs and validate backup import/export
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout isolated trial
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+      - name: Install existing frozen dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Resolve Expo SDK 54-compatible native file packages
+        env:
+          CI: "1"
+        run: pnpm exec expo install --pnpm expo-file-system expo-sharing expo-document-picker
+      - name: Verify refreshed lockfile is reproducible
+        run: pnpm install --frozen-lockfile
+      - name: TypeScript validation
+        run: pnpm check
+      - name: Run regression tests
+        run: pnpm test
+      - name: Lint
+        run: pnpm lint
+      - name: Server bundle
+        run: pnpm build
+      - name: Export Expo web app
+        run: pnpm exec expo export --platform web
+      - name: Verify production dependency security gate
+        run: pnpm audit --prod --audit-level high
+      - name: Commit verified dependency additions to trial only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "test(deps): install Expo SDK-compatible backup file APIs"
+            git push origin HEAD:trial/android-json-file-backup-20261114
+          fi
