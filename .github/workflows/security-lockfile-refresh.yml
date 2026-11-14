@@ -1,0 +1,71 @@
+name: One-time compatible dependency refresh
+
+# This workflow only executes when it is first added on the disposable security
+# analysis branch. Its commit to package files cannot recursively re-trigger it.
+on:
+  push:
+    branches:
+      - security/metodo-lockfile-refresh-20261114
+    paths:
+      - .github/workflows/security-lockfile-refresh.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    name: Refresh vulnerable transitive packages within compatible ranges
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+      - name: Install exact original lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Refresh compatible package and transitive versions
+        run: pnpm update --depth 100
+      - name: Validate the refreshed dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Report security findings after refresh
+        shell: bash
+        run: |
+          set +e
+          pnpm audit --prod --audit-level high > security-audit-after-refresh.log 2>&1
+          result=$?
+          tail -n 160 security-audit-after-refresh.log
+          echo "Audit exit code: $result"
+          echo "$result" > security-audit-exit-code.txt
+          exit 0
+      - name: Upload audit report without marking audit passed
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-dependency-refresh-audit
+          path: |
+            security-audit-after-refresh.log
+            security-audit-exit-code.txt
+          retention-days: 14
+          if-no-files-found: error
+      - name: Commit refreshed package files only to isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "No compatible changes available"
+          else
+            git commit -m "chore(deps): refresh compatible dependency lockfile"
+            git push origin HEAD:security/metodo-lockfile-refresh-20261114
+          fi
