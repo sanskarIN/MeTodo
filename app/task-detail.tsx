@@ -1,37 +1,41 @@
-import { ScrollView, Text, View, TouchableOpacity, TextInput, Pressable, Alert } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, TextInput, Pressable, Alert, Platform, Modal } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useTaskContext } from "@/lib/task-context";
 import { useColors } from "@/hooks/use-colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { Task } from "@/types";
+import { taskCalendarService, type WritableCalendarOption } from "@/lib/task-calendar-service";
 
 export default function TaskDetailScreen() {
   const router = useRouter();
   const { taskId } = useLocalSearchParams();
-  const { tasks, updateTask, deleteTask } = useTaskContext();
+  const { tasks, updateTask, deleteTask, settings, updateSettings, dataReadiness } = useTaskContext();
   const colors = useColors();
 
   const [task, setTask] = useState<Task | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState<Task | null>(null);
+  const [calendarAction, setCalendarAction] = useState<"link" | "sync" | "open" | "unlink" | null>(null);
+  const [calendarOptions, setCalendarOptions] = useState<WritableCalendarOption[]>([]);
+  const [isCalendarPickerVisible, setCalendarPickerVisible] = useState(false);
 
   useEffect(() => {
-    const foundTask = tasks.find((t) => t.id === taskId);
-    if (foundTask) {
-      setTask(foundTask);
-      setEditedTask(foundTask);
-    }
+    const foundTask = tasks.find((t) => t.id === taskId) ?? null;
+    setTask(foundTask);
+    setEditedTask(foundTask);
   }, [taskId, tasks]);
 
   const handleSave = async () => {
-    if (editedTask) {
-      await updateTask({
-        ...editedTask,
-        updatedAt: new Date(),
-      });
-      setTask(editedTask);
+    if (!editedTask) return;
+    const next = { ...editedTask, updatedAt: new Date() };
+    try {
+      await updateTask(next);
+      setTask(next);
       setIsEditing(false);
+    } catch (error) {
+      console.error("Unable to save task edits:", error);
+      Alert.alert("Unable to save task", "Your edits were not saved. Please try again.");
     }
   };
 
@@ -42,8 +46,13 @@ export default function TaskDetailScreen() {
         text: "Delete",
         onPress: async () => {
           if (task) {
-            await deleteTask(task.id);
-            router.back();
+            try {
+              await deleteTask(task.id);
+              router.back();
+            } catch (error) {
+              console.error("Unable to delete task:", error);
+              Alert.alert("Unable to delete task", "The task was not deleted. Please try again.");
+            }
           }
         },
       },
@@ -51,20 +60,151 @@ export default function TaskDetailScreen() {
   };
 
   const handleToggleComplete = async () => {
-    if (task) {
-      await updateTask({
-        ...task,
-        completed: !task.completed,
-        updatedAt: new Date(),
-      });
-      setTask({ ...task, completed: !task.completed });
+    if (!task) return;
+    const next = { ...task, completed: !task.completed, updatedAt: new Date() };
+    try {
+      await updateTask(next);
+      setTask(next);
+    } catch (error) {
+      console.error("Unable to update task completion:", error);
+      Alert.alert("Unable to save task", "The completion change was not saved. Please try again.");
     }
   };
 
-  if (!task) {
+  const persistTask = async (nextTask: Task) => {
+    await updateTask(nextTask);
+    setTask(nextTask);
+    setEditedTask(nextTask);
+  };
+
+  const createCalendarLink = async (calendar: WritableCalendarOption) => {
+    if (!task) return;
+    setCalendarAction("link");
+    setCalendarPickerVisible(false);
+    try {
+      await updateSettings({ preferredCalendarId: calendar.id, preferredCalendarTitle: calendar.title });
+      const result = await taskCalendarService.linkTask(task, calendar.id);
+      if (result.success && result.link) {
+        await persistTask({ ...task, calendarEvent: result.link, updatedAt: new Date() });
+      }
+      Alert.alert(result.success ? "Calendar updated" : "Calendar unavailable", result.message);
+    } catch (error) {
+      console.error("Unable to save calendar link:", error);
+      Alert.alert("Calendar linking incomplete",
+        "An event may exist in the device calendar even if MeTodo could not save its link. Check the calendar before retrying.");
+    } finally {
+      setCalendarAction(null);
+    }
+  };
+
+  const handleCalendarPicker = async () => {
+    if (!task) return;
+    setCalendarAction("link");
+    try {
+      const result = await taskCalendarService.getWritableCalendars();
+      if (!result.success || !result.calendars) {
+        Alert.alert("Calendar unavailable", result.message);
+        return;
+      }
+      setCalendarOptions(result.calendars);
+      setCalendarPickerVisible(true);
+    } catch (error) {
+      console.error("Unable to load device calendars:", error);
+      Alert.alert("Calendar unavailable", "Could not access device calendars. Please try again.");
+    } finally {
+      setCalendarAction(null);
+    }
+  };
+
+  const handleCalendarLink = async () => {
+    if (!settings.preferredCalendarId || !settings.preferredCalendarTitle) {
+      await handleCalendarPicker();
+      return;
+    }
+
+    await createCalendarLink({ id: settings.preferredCalendarId, title: settings.preferredCalendarTitle });
+  };
+
+  const handleCalendarSync = async () => {
+    if (!task) return;
+    setCalendarAction("sync");
+    try {
+      const result = await taskCalendarService.syncTask(task);
+      if (result.success && result.link) {
+        await persistTask({ ...task, calendarEvent: result.link, updatedAt: new Date() });
+      }
+      Alert.alert(result.success ? "Calendar updated" : "Calendar unavailable", result.message);
+    } catch (error) {
+      console.error("Calendar sync failed:", error);
+      Alert.alert("Calendar sync incomplete",
+        "MeTodo could not save the update. Check the device calendar before retrying.");
+    } finally {
+      setCalendarAction(null);
+    }
+  };
+
+  const handleCalendarOpen = async () => {
+    if (!task) return;
+    setCalendarAction("open");
+    try {
+      const result = await taskCalendarService.openTaskEvent(task);
+      if (!result.success) {
+        Alert.alert("Calendar unavailable", result.message);
+      }
+    } catch (error) {
+      console.error("Unable to open calendar event:", error);
+      Alert.alert("Calendar unavailable", "Could not open this event on the device.");
+    } finally {
+      setCalendarAction(null);
+    }
+  };
+
+  const handleCalendarUnlink = () => {
+    if (!task) return;
+    Alert.alert("Remove calendar event", "This removes the linked event from your device calendar and unlinks the task.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          setCalendarAction("unlink");
+          try {
+            const result = await taskCalendarService.unlinkTask(task);
+            if (result.success) {
+              const { calendarEvent: _calendarEvent, ...taskWithoutCalendarEvent } = task;
+              await persistTask({ ...taskWithoutCalendarEvent, updatedAt: new Date() });
+            }
+            Alert.alert(result.success ? "Calendar updated" : "Calendar unavailable", result.message);
+          } catch (error) {
+            console.error("Calendar unlink failed:", error);
+            Alert.alert("Calendar unlink incomplete",
+              "The calendar event or local task link may still need attention. Check both before retrying.");
+          } finally {
+            setCalendarAction(null);
+          }
+        },
+      },
+    ]);
+  };
+
+  if (!task || dataReadiness !== "ready") {
+    const message = dataReadiness === "loading"
+      ? "Loading saved task…"
+      : dataReadiness === "error"
+        ? "Saved task data could not be loaded safely"
+        : "This task no longer exists";
     return (
-      <ScreenContainer className="bg-background items-center justify-center">
-        <Text className="text-foreground">Loading...</Text>
+      <ScreenContainer className="bg-background items-center justify-center p-6">
+        <Text className="text-foreground text-lg font-semibold">{message}</Text>
+        <Pressable accessibilityRole="button"
+          onPress={() => dataReadiness === "error"
+            ? router.push("/backup-restore")
+            : router.back()}
+          className="bg-primary rounded-lg p-3 mt-4">
+          <Text className="text-white font-semibold">
+            {dataReadiness === "error" ? "Open backup recovery" : "Back to tasks"}
+          </Text>
+        </Pressable>
       </ScreenContainer>
     );
   }
@@ -198,6 +338,117 @@ export default function TaskDetailScreen() {
             </Text>
           </View>
         )}
+
+        {/* Device Calendar */}
+        <View className="px-4 mb-6">
+          <Text className="text-sm font-semibold text-muted mb-2">Device Calendar</Text>
+          {!task.dueDate ? (
+            <View className="rounded-xl p-4" style={{ backgroundColor: colors.surface }}>
+              <Text className="text-foreground">Add a due date to create a calendar event for this task.</Text>
+            </View>
+          ) : Platform.OS === "web" ? (
+            <View className="rounded-xl p-4" style={{ backgroundColor: colors.surface }}>
+              <Text className="text-foreground">Calendar links are available in the Android and iOS apps.</Text>
+            </View>
+          ) : task.calendarEvent ? (
+            <View className="gap-2">
+              <Text className="text-sm text-muted">This task is linked to a device calendar event.</Text>
+              <TouchableOpacity
+                onPress={handleCalendarOpen}
+                disabled={calendarAction !== null}
+                style={{ backgroundColor: colors.surface, opacity: calendarAction ? 0.6 : 1 }}
+                className="rounded-xl py-3 items-center active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="View linked calendar event"
+              >
+                <Text className="text-foreground font-semibold">{calendarAction === "open" ? "Opening calendar…" : "View in Calendar"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCalendarSync}
+                disabled={calendarAction !== null}
+                style={{ backgroundColor: colors.primary, opacity: calendarAction ? 0.6 : 1 }}
+                className="rounded-xl py-3 items-center active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="Update linked calendar event"
+              >
+                <Text className="text-white font-semibold">{calendarAction === "sync" ? "Updating calendar…" : "Update Calendar Event"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCalendarUnlink}
+                disabled={calendarAction !== null}
+                style={{ backgroundColor: colors.surface, opacity: calendarAction ? 0.6 : 1 }}
+                className="rounded-xl py-3 items-center active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="Remove linked calendar event"
+              >
+                <Text style={{ color: colors.error }} className="font-semibold">{calendarAction === "unlink" ? "Removing calendar event…" : "Remove Calendar Event"}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View className="gap-2">
+              <TouchableOpacity
+                onPress={handleCalendarLink}
+                disabled={calendarAction !== null}
+                style={{ backgroundColor: colors.primary, opacity: calendarAction ? 0.6 : 1 }}
+                className="rounded-xl py-3 items-center active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel={settings.preferredCalendarTitle ? `Add task deadline to ${settings.preferredCalendarTitle}` : "Choose a calendar for this task deadline"}
+              >
+                <Text className="text-white font-semibold">
+                  {calendarAction === "link"
+                    ? "Adding to calendar…"
+                    : settings.preferredCalendarTitle
+                      ? `Add to ${settings.preferredCalendarTitle}`
+                      : "Choose Calendar & Add Event"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCalendarPicker}
+                disabled={calendarAction !== null}
+                style={{ backgroundColor: colors.surface, opacity: calendarAction ? 0.6 : 1 }}
+                className="rounded-xl py-3 items-center active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="Choose a different device calendar"
+              >
+                <Text className="text-foreground font-semibold">Choose a Different Calendar</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        <Modal
+          visible={isCalendarPickerVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setCalendarPickerVisible(false)}
+        >
+          <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0, 0, 0, 0.45)" }}>
+            <View className="rounded-t-3xl p-5" style={{ backgroundColor: colors.background }}>
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-xl font-bold text-foreground">Choose Calendar</Text>
+                <Pressable onPress={() => setCalendarPickerVisible(false)} accessibilityRole="button" accessibilityLabel="Close calendar chooser">
+                  <Text className="text-xl text-muted">✕</Text>
+                </Pressable>
+              </View>
+              <Text className="text-sm text-muted mb-4">MeTodo will remember this choice for future task deadlines.</Text>
+              <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                {calendarOptions.map((calendar) => (
+                  <TouchableOpacity
+                    key={calendar.id}
+                    onPress={() => createCalendarLink(calendar)}
+                    style={{ backgroundColor: colors.surface, borderLeftColor: calendar.color || colors.primary, borderLeftWidth: 4 }}
+                    className="rounded-xl px-4 py-4 mb-2 active:opacity-80"
+                    accessibilityRole="button"
+                    accessibilityLabel={`Add task to ${calendar.title}`}
+                  >
+                    <Text className="text-foreground font-semibold">{calendar.title}</Text>
+                    {calendar.id === settings.preferredCalendarId && <Text className="text-sm text-muted mt-1">Preferred calendar</Text>}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
 
         {/* Subtasks */}
         {task.subtasks.length > 0 && (

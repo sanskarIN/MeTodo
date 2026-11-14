@@ -1,0 +1,235 @@
+name: Publish Tested MeTodo v1.0.0 (Manual Approval)
+
+# Stage 2 of the release process. Only publishes a signed candidate that
+# has already been independently installed, tested and approved by the owner.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact version from package.json (for example 1.0.0)"
+        type: string
+        required: true
+      approvedCommit:
+        description: "Exact 40-character protected main SHA that built the candidate"
+        type: string
+        required: true
+      candidateRunId:
+        description: "Successful Build Signed Release Candidate workflow run ID"
+        type: string
+        required: true
+      testedApkSha256:
+        description: "SHA256 of the APK installed and tested on a physical Android device"
+        type: string
+        required: true
+      testedWebSha256:
+        description: "SHA256 of the inspected web archive from the same candidate run"
+        type: string
+        required: true
+      deviceTestEvidenceUrl:
+        description: "GitHub issue #11 comment URL with sanitized signed APK test results"
+        type: string
+        required: true
+      confirmPhysicalDeviceTests:
+        description: "I verified the signed APK on a device and reviewed the test evidence"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metodo-manual-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify tested candidate and publish GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: stable-release
+    permissions:
+      contents: write
+      actions: read
+      checks: read
+      issues: read
+    steps:
+      - name: Checkout protected main
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Require separately approved source and physical-device test
+        shell: bash
+        env:
+          APPROVED_SHA: ${{ inputs.approvedCommit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidateRunId }}
+          TESTED_APK_SHA256: ${{ inputs.testedApkSha256 }}
+          TESTED_WEB_SHA256: ${{ inputs.testedWebSha256 }}
+          TEST_EVIDENCE_URL: ${{ inputs.deviceTestEvidenceUrl }}
+          CONFIRM_DEVICE_TESTS: ${{ inputs.confirmPhysicalDeviceTests }}
+          OWNER_RELEASE_APPROVAL: ${{ secrets.METODO_RELEASE_APPROVED_SHA }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Stable release must run on protected main."
+            exit 1
+          fi
+          if [[ ! "$APPROVED_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ "$GITHUB_SHA" != "$APPROVED_SHA" ]]; then
+            echo "::error::The current main SHA is not the approved candidate SHA."
+            exit 1
+          fi
+          if [[ -z "$OWNER_RELEASE_APPROVAL" ]] || [[ "$OWNER_RELEASE_APPROVAL" != "$GITHUB_SHA" ]]; then
+            echo "::error::Release-owner approval secret must match the reviewed commit."
+            exit 1
+          fi
+          if [[ "$CONFIRM_DEVICE_TESTS" != "true" ]]; then
+            echo "::error::Physical-device tests were not confirmed."
+            exit 1
+          fi
+          if [[ ! "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]] || [[ "$CANDIDATE_RUN_ID" == "0" ]]; then
+            echo "::error::Candidate workflow run ID must be a positive integer."
+            exit 1
+          fi
+          if [[ ! "$TESTED_APK_SHA256" =~ ^[0-9a-f]{64}$ ]] || [[ ! "$TESTED_WEB_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Supply lowercase 64-character SHA256 values for the tested artifacts."
+            exit 1
+          fi
+          if [[ ! "$TEST_EVIDENCE_URL" =~ ^https://github\.com/sanskarIN/MeTodo/issues/11#issuecomment-[0-9]+$ ]]; then
+            echo "::error::Provide the direct link to your signed-device-test comment on issue #11."
+            exit 1
+          fi
+          APP_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$APP_VERSION" != "$RELEASE_VERSION" ]]; then
+            echo "::error::Release version differs from package.json."
+            exit 1
+          fi
+          if git show-ref --verify --quiet "refs/tags/v$RELEASE_VERSION"; then
+            echo "::error::The requested release tag exists; never overwrite a stable release."
+            exit 1
+          fi
+
+      - name: Verify candidate workflow run came from this exact main commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidateRunId }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN_ID" > signed-candidate-run.json
+          jq -e --arg sha "$GITHUB_SHA" '
+            .head_sha == $sha and
+            .head_branch == "main" and
+            .event == "workflow_dispatch" and
+            .status == "completed" and
+            .conclusion == "success" and
+            (.path | endswith("/.github/workflows/release-workflow.yml@refs/heads/main"))
+          ' signed-candidate-run.json >/dev/null || {
+            echo "::error::Candidate run was not a successful signed build from this exact protected main SHA."
+            exit 1
+          }
+          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" \
+            --jq '.check_runs[] | select(.status == "completed" and .conclusion == "success") | .name' \
+            > passed-checks.txt
+          required_checks=(
+            "Validate MeTodo"
+            "Build Android APK"
+            "Test Android Build"
+            "Build iOS Simulator"
+            "Test iOS Build"
+            "Validate Linux Desktop"
+            "Test Linux Build"
+            "Validate macOS Desktop"
+            "Test macOS Build"
+            "Validate Windows Desktop"
+            "Test Windows Build"
+          )
+          for required in "${required_checks[@]}"; do
+            if ! grep -Fxq -- "$required" passed-checks.txt; then
+              echo "::error::Required protected-main check not green: $required"
+              exit 1
+            fi
+          done
+
+      - name: Verify release-owner device-test evidence belongs to issue 11
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_EVIDENCE_URL: ${{ inputs.deviceTestEvidenceUrl }}
+          APPROVED_SHA: ${{ inputs.approvedCommit }}
+          TESTED_APK_SHA256: ${{ inputs.testedApkSha256 }}
+          TESTED_WEB_SHA256: ${{ inputs.testedWebSha256 }}
+        run: |
+          set -euo pipefail
+          comment_id="${TEST_EVIDENCE_URL##*issuecomment-}"
+          if [[ ! "$comment_id" =~ ^[0-9]+$ ]]; then
+            echo "::error::Device test evidence must link to a real issue #11 comment."
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" > signed-device-test-evidence.json
+          jq -e --arg repo "$GITHUB_REPOSITORY" \
+            --arg sha "$APPROVED_SHA" \
+            --arg apk "$TESTED_APK_SHA256" \
+            --arg web "$TESTED_WEB_SHA256" '
+            .issue_url == ("https://api.github.com/repos/" + $repo + "/issues/11") and
+            (.author_association == "OWNER" or .author_association == "COLLABORATOR" or .author_association == "MEMBER") and
+            (.body | contains($sha) and contains($apk) and contains($web))
+          ' signed-device-test-evidence.json > /dev/null || {
+            echo "::error::Issue #11 evidence must be owner/collaborator authored and contain the approved SHA and both artifact hashes."
+            exit 1
+          }
+
+      - name: Download only the approved candidate-run artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.candidateRunId }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: metodo-candidate-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Require the exact files tested before publication
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          TESTED_APK_SHA256: ${{ inputs.testedApkSha256 }}
+          TESTED_WEB_SHA256: ${{ inputs.testedWebSha256 }}
+        run: |
+          set -euo pipefail
+          apk="release-assets/MeTodo-v$RELEASE_VERSION-android.apk"
+          web="release-assets/MeTodo-v$RELEASE_VERSION-web.tar.gz"
+          test -s "$apk"
+          test -s "$web"
+          unzip -tqq "$apk"
+          tar -tzf "$web" >/dev/null
+          echo "$TESTED_APK_SHA256  $apk" | sha256sum --check --status || {
+            echo "::error::APK differs from the signed file tested on Android."
+            exit 1
+          }
+          echo "$TESTED_WEB_SHA256  $web" | sha256sum --check --status || {
+            echo "::error::Web archive does not match the checked release candidate."
+            exit 1
+          }
+          (
+            cd release-assets
+            sha256sum "MeTodo-v$RELEASE_VERSION-android.apk" \
+              "MeTodo-v$RELEASE_VERSION-web.tar.gz" > SHA256SUMS
+            cat SHA256SUMS
+          )
+
+      - name: Publish only the manually approved, previously tested candidate
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: MeTodo v${{ inputs.version }}
+          generate_release_notes: true
+          prerelease: false
+          make_latest: true
+          draft: false
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/MeTodo-v*-android.apk
+            release-assets/MeTodo-v*-web.tar.gz
+            release-assets/SHA256SUMS
