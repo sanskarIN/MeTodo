@@ -36,7 +36,7 @@ export default function CreateTaskScreen() {
     }
 
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
       title: title.trim(),
       description,
       priority,

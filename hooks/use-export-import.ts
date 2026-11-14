@@ -173,7 +173,7 @@ export function useExportImport() {
   const restoreFromBackup = useCallback((backupContent: string) => {
     try {
       const result = ExportImportService.restoreFromBackup(backupContent);
-      setSuccess('Backup restored successfully');
+      setSuccess('Backup parsed; save the returned data to task context to complete restoration');
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Backup restoration failed';

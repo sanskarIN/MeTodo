@@ -145,10 +145,17 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleThemeChange = async (theme: any) => {
-    await updateSettings({
-      theme: theme.name,
-    });
+  const saveSettingsSafely = async (changes: Parameters<typeof updateSettings>[0]) => {
+    try {
+      await updateSettings(changes);
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+      Alert.alert("Unable to save settings", "Your changes were not saved. Please try again.");
+    }
+  };
+
+  const handleThemeChange = async (theme: { name: string }) => {
+    await saveSettingsSafely({ theme: theme.name });
   };
 
   const handleClearData = () => {
@@ -180,6 +187,17 @@ export default function SettingsScreen() {
         <View className="px-4 pt-4 pb-6">
           <Text className="text-3xl font-bold text-foreground">Settings</Text>
           <Text className="text-sm text-muted">Customize your experience</Text>
+        </View>
+
+        {/* Offline-first release scope: do not imply cloud sync exists. */}
+        <View className="px-4 mb-6">
+          <View className="rounded-xl p-4" style={{ backgroundColor: colors.surface }}>
+            <Text className="text-sm font-semibold text-foreground">Local-first data</Text>
+            <Text className="text-xs text-muted mt-2">
+              Tasks are stored on this device. Cross-device cloud synchronization is not yet
+              available. Keep a backup before moving to another device or clearing app data.
+            </Text>
+          </View>
         </View>
 
         {/* Theme Selection */}
@@ -231,7 +249,7 @@ export default function SettingsScreen() {
             {(["auto", "light", "dark"] as const).map((mode) => (
               <Pressable
                 key={mode}
-                onPress={() => updateSettings({ darkMode: mode })}
+                onPress={() => { void saveSettingsSafely({ darkMode: mode }); }}
                 style={({ pressed }) => [
                   {
                     opacity: pressed ? 0.7 : 1,
@@ -256,7 +274,7 @@ export default function SettingsScreen() {
           <View className="flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-foreground">Notifications</Text>
             <Pressable
-              onPress={() => updateSettings({ notifications: !settings.notifications })}
+              onPress={() => { void saveSettingsSafely({ notifications: !settings.notifications }); }}
               style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
             >
               <View
@@ -285,7 +303,7 @@ export default function SettingsScreen() {
               {CHART_SPEED_OPTIONS.map((option) => (
                 <Pressable
                   key={option.value}
-                  onPress={() => updateSettings({ chartAnimationSpeed: option.value })}
+                  onPress={() => { void saveSettingsSafely({ chartAnimationSpeed: option.value }); }}
                   style={({ pressed }) => [
                     {
                       opacity: pressed ? 0.7 : 1,
@@ -326,7 +344,7 @@ export default function SettingsScreen() {
               </View>
               <Switch
                 value={Boolean(settings.reduceMotion)}
-                onValueChange={(value) => updateSettings({ reduceMotion: value })}
+                onValueChange={(value) => { void saveSettingsSafely({ reduceMotion: value }); }}
                 trackColor={{ false: colors.muted, true: colors.primary }}
                 thumbColor={settings.reduceMotion ? "#fff" : colors.surface}
                 accessibilityLabel="Reduce chart motion"
@@ -371,14 +389,14 @@ export default function SettingsScreen() {
         <View className="px-4 mb-8">
           <Text className="text-lg font-semibold text-foreground mb-4">Follow Creator on:</Text>
           <TouchableOpacity
-            onPress={() => handleOpenLink("https://www.github.com/Sanskar-in")}
+            onPress={() => handleOpenLink("https://github.com/sanskarIN")}
             style={{ backgroundColor: colors.surface }}
             className="rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
           >
             <Text className="text-2xl mr-3">🐙</Text>
             <View className="flex-1">
               <Text className="font-semibold text-foreground">GitHub</Text>
-              <Text className="text-sm text-muted">github.com/Sanskar-in</Text>
+              <Text className="text-sm text-muted">github.com/sanskarIN</Text>
             </View>
             <Text className="text-lg">→</Text>
           </TouchableOpacity>
@@ -397,14 +415,14 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => handleOpenLink("https://www.x.com/SanskarCode")}
+            onPress={() => handleOpenLink("https://x.com/SanskarCodes")}
             style={{ backgroundColor: colors.surface }}
             className="rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
           >
             <Text className="text-2xl mr-3">𝕏</Text>
             <View className="flex-1">
               <Text className="font-semibold text-foreground">X (Twitter)</Text>
-              <Text className="text-sm text-muted">x.com/SanskarCode</Text>
+              <Text className="text-sm text-muted">x.com/SanskarCodes</Text>
             </View>
             <Text className="text-lg">→</Text>
           </TouchableOpacity>
@@ -441,13 +459,29 @@ export default function SettingsScreen() {
         {/* Open Source Info */}
         <View className="px-4 mb-8">
           <TouchableOpacity
-            onPress={() => handleOpenLink("https://www.github.com/Sanskar-in/MeTodo")}
+            onPress={() => handleOpenLink("https://github.com/sanskarIN/MeTodo")}
             style={{ backgroundColor: colors.surface }}
             className="rounded-xl p-4 active:opacity-80"
           >
             <Text className="text-sm text-muted mb-2">Open Source</Text>
             <Text className="font-semibold text-foreground">Source Code available at</Text>
-            <Text className="text-primary mt-1">github.com/Sanskar-in/MeTodo</Text>
+            <Text className="text-primary mt-1">github.com/sanskarIN/MeTodo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Backup & Restore */}
+        <View className="px-4 mb-8">
+          <TouchableOpacity
+            onPress={() => router.push("/backup-restore")}
+            accessibilityRole="button"
+            accessibilityLabel="Back up or restore local tasks"
+            style={{ backgroundColor: colors.surface }}
+            className="rounded-xl p-4 active:opacity-80"
+          >
+            <Text className="text-sm font-semibold text-foreground">Backup & Restore</Text>
+            <Text className="text-xs text-muted mt-2">
+              Export your local tasks and preferences or restore a saved backup.
+            </Text>
           </TouchableOpacity>
         </View>
 
