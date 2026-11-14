@@ -7,7 +7,7 @@ import { useState } from "react";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { tasks, avatar } = useTaskContext();
+  const { tasks, avatar, dataReadiness } = useTaskContext();
   const colors = useColors();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -42,6 +42,29 @@ export default function HomeScreen() {
         return colors.muted;
     }
   };
+
+  if (dataReadiness !== "ready") {
+    return (
+      <ScreenContainer className="bg-background">
+        <View className="p-6">
+          <Text className="text-xl font-bold text-foreground">
+            {dataReadiness === "loading" ? "Loading your local tasks…" : "Local data needs attention"}
+          </Text>
+          <Text className="text-muted mt-3">
+            {dataReadiness === "loading"
+              ? "Reading saved tasks and preferences from this device."
+              : "Some saved data could not be opened. Your tasks have not been erased. Restore a known-good backup or use Settings to clear damaged local data."}
+          </Text>
+          {dataReadiness === "error" && (
+            <Pressable onPress={() => router.push("/backup-restore")}
+              accessibilityRole="button" className="rounded-lg p-3 mt-4 bg-primary">
+              <Text className="text-white font-semibold">Open backup recovery</Text>
+            </Pressable>
+          )}
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer className="bg-background">

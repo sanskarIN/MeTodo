@@ -28,8 +28,8 @@ export const APP_METADATA = {
   description: 'A premium task management app with avatar creator and 50+ themes',
   author: 'Sanskar Yadav',
   email: 'supportramsandesh@gmail.com',
-  website: 'https://github.com/Sanskar-in/MeTodo',
-  repository: 'https://github.com/Sanskar-in/MeTodo',
+  website: 'https://github.com/sanskarIN/MeTodo',
+  repository: 'https://github.com/sanskarIN/MeTodo',
   license: 'MIT',
   keywords: ['task', 'management', 'productivity', 'todo', 'avatar', 'themes'],
 } as const;

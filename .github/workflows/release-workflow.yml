@@ -1,344 +1,271 @@
-name: Automated Release Workflow
+name: First Stable Release (Android + Web)
 
+# Never publish on a tag push. A separately reviewed, manually dispatched
+# run is required from the exact protected-main commit.
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., 1.0.0)'
+        description: "Exact package.json version (for example 1.0.0)"
+        type: string
+        required: true
+      approvedCommit:
+        description: "Full reviewed SHA of the protected main commit"
+        type: string
         required: true
       releaseChannel:
-        description: 'Release channel'
-        required: true
-        default: 'stable'
+        description: "Release channel"
         type: choice
         options:
-          - stable
           - beta
-          - alpha
+          - stable
+        default: beta
+        required: true
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+permissions:
+  contents: read
+
+concurrency:
+  group: metodo-manual-release
+  cancel-in-progress: false
 
 jobs:
-  prepare-release:
-    name: Prepare Release
+  validate:
+    name: Verify release source and export web
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      changelog: ${{ steps.changelog.outputs.changelog }}
-      releaseNotes: ${{ steps.notes.outputs.notes }}
+    timeout-minutes: 30
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout full source
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Extract version
-        id: version
+      - name: Verify protected main and exact version
+        shell: bash
+        env:
+          APPROVED_SHA: ${{ inputs.approvedCommit }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/v}
-          else
-            VERSION=${{ github.event.inputs.version }}
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Release must be dispatched from protected main."
+            exit 1
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
+          if [[ ! "$APPROVED_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ "$APPROVED_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::Approved SHA does not match the exact source commit."
+            exit 1
+          fi
+          APP_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$RELEASE_VERSION" != "$APP_VERSION" ]]; then
+            echo "::error::Requested version must equal package.json version."
+            exit 1
+          fi
+          if git show-ref --verify --quiet "refs/tags/v$RELEASE_VERSION"; then
+            echo "::error::Release tag already exists. Review existing release instead of overwriting."
+            exit 1
+          fi
 
-      - name: Generate changelog
-        id: changelog
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Refuse release with high or critical production dependency advisories
+        run: pnpm audit --prod --audit-level high
+
+      - name: TypeScript
+        run: pnpm check
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build server
+        run: pnpm build
+
+      - name: Export browser app
+        run: pnpm exec expo export --platform web --output-dir dist/web
+
+      - name: Package web distribution
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          CHANGELOG=$(git log --oneline --no-decorate $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~10")..HEAD || echo "Initial release")
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          test -f dist/web/index.html
+          tar -czf "dist/MeTodo-v$RELEASE_VERSION-web.tar.gz" -C dist/web .
+          test -s "dist/MeTodo-v$RELEASE_VERSION-web.tar.gz"
 
-      - name: Generate release notes
-        id: notes
+      - name: Upload browser distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-stable-web
+          path: dist/MeTodo-v*-web.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  android:
+    name: Build signed Android APK with EAS
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    # Owner sets up an Expo project and managed signing credentials separately.
+    environment: eas-signing
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Require configured Expo authorization
+        shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          NOTES="Release ${{ steps.version.outputs.version }}\n\n"
-          NOTES+="## Changes\n"
-          NOTES+="${{ steps.changelog.outputs.changelog }}\n\n"
-          NOTES+="## Installation\n"
-          NOTES+="Download the appropriate package for your platform from the Releases page.\n\n"
-          NOTES+="## Support\n"
-          NOTES+="For issues or questions, please visit: https://github.com/sanskaryadav/metodo/issues"
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          if [[ -z "$EXPO_TOKEN" ]]; then
+            echo "::error::Configure EXPO_TOKEN and EAS project/signing credentials before a signed build."
+            exit 1
+          fi
 
-  build-android:
-    name: Build Android
-    needs: prepare-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build Android APK
-        run: bash scripts/build-android.sh --version ${{ needs.prepare-release.outputs.version }}
-
-      - name: Build Android AAB
-        run: bash scripts/build-android.sh --version ${{ needs.prepare-release.outputs.version }} --aab
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-android-apk
-          path: android/app/build/outputs/apk/release/*.apk
-
-      - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-android-aab
-          path: android/app/build/outputs/bundle/release/*.aab
-
-  build-windows:
-    name: Build Windows
-    needs: prepare-release
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build Windows EXE
-        run: bash scripts/build-windows.sh --version ${{ needs.prepare-release.outputs.version }}
-
-      - name: Upload EXE artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-windows-exe
-          path: dist/windows/*.exe
-
-      - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-windows-msi
-          path: dist/windows/*.msi
-
-  build-linux:
-    name: Build Linux
-    needs: prepare-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
+      - name: Request signed installable APK
+        shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          pnpm install
-          sudo apt-get update
-          sudo apt-get install -y libfuse-dev
+          set -euo pipefail
+          npx --yes eas-cli@latest build \
+            --platform android \
+            --profile production-apk \
+            --non-interactive \
+            --wait \
+            --json > eas-android-build.json
 
-      - name: Build Linux AppImage
-        run: bash scripts/build-linux.sh --version ${{ needs.prepare-release.outputs.version }} --appimage
+      - name: Verify and download EAS build
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-android
+          node scripts/download-eas-android-build.mjs \
+            eas-android-build.json \
+            "release-android/MeTodo-v$RELEASE_VERSION-android.apk"
 
-      - name: Build Linux Snap
-        run: bash scripts/build-linux.sh --version ${{ needs.prepare-release.outputs.version }} --snap
-
-      - name: Build Linux Flatpak
-        run: bash scripts/build-linux.sh --version ${{ needs.prepare-release.outputs.version }} --flatpak
-
-      - name: Upload AppImage artifact
+      - name: Upload production-signed Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: metodo-linux-appimage
-          path: dist/linux/*.AppImage
+          name: metodo-stable-android
+          path: release-android/MeTodo-v*-android.apk
+          if-no-files-found: error
+          retention-days: 30
 
-      - name: Upload Snap artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-linux-snap
-          path: dist/linux/*.snap
-
-      - name: Upload Flatpak artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-linux-flatpak
-          path: dist/linux/*.flatpak
-
-  build-ios:
-    name: Build iOS
-    needs: prepare-release
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build iOS IPA
-        run: bash scripts/build-ios.sh --version ${{ needs.prepare-release.outputs.version }}
-
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-ios-ipa
-          path: dist/ios/*.ipa
-
-  build-macos:
-    name: Build macOS
-    needs: prepare-release
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build macOS DMG
-        run: bash scripts/build-macos.sh --version ${{ needs.prepare-release.outputs.version }}
-
-      - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-macos-dmg
-          path: dist/macos/*.dmg
-
-  create-release:
-    name: Create Release
-    needs: [prepare-release, build-android, build-windows, build-linux, build-ios, build-macos]
+  publish:
+    name: Publish verified GitHub release
+    needs: [validate, android]
     runs-on: ubuntu-latest
-    if: always()
+    timeout-minutes: 15
+    # Configure required reviewers on this environment in GitHub settings.
+    environment: stable-release
+    permissions:
+      contents: write
+      actions: read
+      checks: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Require independent owner approval of exact commit
+        shell: bash
+        env:
+          APPROVED_RELEASE_SHA: ${{ secrets.METODO_RELEASE_APPROVED_SHA }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$APPROVED_RELEASE_SHA" ]] || [[ "$APPROVED_RELEASE_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::Release approval secret missing or does not match this commit."
+            exit 1
+          fi
 
-      - name: Download all artifacts
+      - name: Verify required protected-main checks succeeded
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100"             --jq '.check_runs[] | select(.status == "completed" and .conclusion == "success") | .name'             > passed-checks.txt
+          required_checks=(
+            "Validate MeTodo"
+            "Build Android APK"
+            "Test Android Build"
+            "Build iOS Simulator"
+            "Test iOS Build"
+            "Validate Linux Desktop"
+            "Test Linux Build"
+            "Validate macOS Desktop"
+            "Test macOS Build"
+            "Validate Windows Desktop"
+            "Test Windows Build"
+          )
+          for check in "${required_checks[@]}"; do
+            if ! grep -Fxq -- "$check" passed-checks.txt; then
+              echo "::error::Required protected-main check is not green: $check"
+              exit 1
+            fi
+          done
+
+      - name: Download candidate artifacts
         uses: actions/download-artifact@v4
         with:
-          path: release-artifacts
+          pattern: metodo-stable-*
+          path: release-assets
+          merge-multiple: true
 
-      - name: Generate checksums
+      - name: Validate artifacts and calculate checksums
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          cd release-artifacts
-          find . -type f -exec sha256sum {} \; > SHA256SUMS
+          set -euo pipefail
+          test -s "release-assets/MeTodo-v$RELEASE_VERSION-android.apk"
+          test -s "release-assets/MeTodo-v$RELEASE_VERSION-web.tar.gz"
+          unzip -tqq "release-assets/MeTodo-v$RELEASE_VERSION-android.apk"
+          tar -tzf "release-assets/MeTodo-v$RELEASE_VERSION-web.tar.gz" >/dev/null
+          cd release-assets
+          sha256sum "MeTodo-v$RELEASE_VERSION-android.apk" \
+            "MeTodo-v$RELEASE_VERSION-web.tar.gz" > SHA256SUMS
           cat SHA256SUMS
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: Publish release for reviewed source
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.prepare-release.outputs.version }}
-          name: Release ${{ needs.prepare-release.outputs.version }}
-          body: ${{ needs.prepare-release.outputs.releaseNotes }}
-          files: |
-            release-artifacts/**/*
-            release-artifacts/SHA256SUMS
+          tag_name: v${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: MeTodo v${{ inputs.version }}
+          generate_release_notes: true
+          prerelease: ${{ inputs.releaseChannel != 'stable' }}
+          make_latest: ${{ inputs.releaseChannel == 'stable' }}
           draft: false
-          prerelease: ${{ github.event.inputs.releaseChannel != 'stable' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  publish-api:
-    name: Publish to Update API
-    needs: [prepare-release, create-release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Publish release to API
-        run: |
-          node scripts/publish-release.js \
-            --version ${{ needs.prepare-release.outputs.version }} \
-            --channel ${{ github.event.inputs.releaseChannel || 'stable' }} \
-            --notes "${{ needs.prepare-release.outputs.releaseNotes }}"
-        env:
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-          API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
-
-  notify-users:
-    name: Notify Users
-    needs: [prepare-release, publish-api]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send notification
-        run: |
-          echo "Sending release notification for version ${{ needs.prepare-release.outputs.version }}"
-          # Add notification logic here (email, push notifications, etc.)
-
-  cleanup:
-    name: Cleanup
-    needs: [prepare-release, create-release]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Delete workflow artifacts
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          name: |
-            metodo-android-apk
-            metodo-android-aab
-            metodo-windows-exe
-            metodo-windows-msi
-            metodo-linux-appimage
-            metodo-linux-snap
-            metodo-linux-flatpak
-            metodo-ios-ipa
-            metodo-macos-dmg
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/MeTodo-v*-android.apk
+            release-assets/MeTodo-v*-web.tar.gz
+            release-assets/SHA256SUMS
