@@ -1,4 +1,4 @@
-name: One-time compatible dependency refresh
+name: Test patched transitive dependency overrides
 
 # This workflow only executes when it is first added on the disposable security
 # analysis branch. Its commit to package files cannot recursively re-trigger it.
@@ -31,12 +31,22 @@ jobs:
         with:
           node-version: "22.13.0"
           cache: pnpm
-      - name: Install exact original lockfile
-        run: pnpm install --frozen-lockfile
-      - name: Refresh compatible package and transitive versions
+      - name: Regenerate lockfile for trial patched overrides
+        run: pnpm install --no-frozen-lockfile
+      - name: Refresh transitive dependencies within constraints
         run: pnpm update --depth 100
-      - name: Validate the refreshed dependency graph
+      - name: Validate frozen install
         run: pnpm install --frozen-lockfile
+      - name: Validate source TypeScript with patched dependencies
+        run: pnpm check
+      - name: Run regression tests
+        run: pnpm test
+      - name: Run lint
+        run: pnpm lint
+      - name: Build server
+        run: pnpm build
+      - name: Build Expo browser bundle
+        run: pnpm exec expo export --platform web
       - name: Report security findings after refresh
         shell: bash
         run: |
