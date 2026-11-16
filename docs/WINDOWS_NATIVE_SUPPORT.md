@@ -22,9 +22,9 @@ pnpm lint
 pnpm desktop:windows:build
 ```
 
-This runs the Expo production web export to `dist/windows-web`, creates `src-tauri/icons/icon.ico` from the tracked `assets/images/icon.png` through the pinned Tauri CLI and compiles a native **Windows NSIS setup.exe** under `src-tauri/target/release/bundle/nsis`. Generated icons and Rust build output are ignored by Git. The current CI uses explicit versions for direct crates and the CLI, but **Cargo.lock is not yet checked in**. A lockfile must be generated, reviewed and committed before stable Windows publishing so transitive Rust dependencies cannot drift.
+This runs the Expo production web export to `dist/windows-web`, creates `src-tauri/icons/icon.ico` from the tracked `assets/images/icon.png` through the pinned Tauri CLI and compiles a native **Windows NSIS setup.exe** under `src-tauri/target/release/bundle/nsis`. Generated icons and Rust build output are ignored by Git. The direct Tauri crates and CLI versions are pinned, and `src-tauri/Cargo.lock` is now committed with the resolved Rust dependency graph. Windows CI runs `cargo metadata --locked` before compiling to detect unintended dependency drift. The committed lockfile must be refreshed deliberately and reviewed when Rust dependencies are upgraded.
 
-The `Windows Native Installer (Trial)` GitHub Actions workflow compiles on `windows-latest` and uploads a **private trial artifact**, `metodo-windows-native-trial`, containing a Windows installer and `SHA256SUMS`. It checks Authenticode status for visibility only; an unsigned trial does not count as trusted/signed stable delivery. The ordinary `Build Windows` workflow merely validates web export on a Windows runner and should not be confused with a native app build.
+The [first successful Windows installer CI run](https://github.com/sanskarIN/MeTodo/actions/runs/43846201553) produced a real offline-capable NSIS setup.exe (~210.5 MiB) and SHA-256 manifest. It was **unsigned** and has not been tested on a Windows desktop. The `Windows Native Installer (Trial)` GitHub Actions workflow compiles on `windows-latest` and uploads a **private trial artifact**, `metodo-windows-native-trial`, containing a Windows installer and `SHA256SUMS`. It checks Authenticode status for visibility only; an unsigned trial does not count as trusted/signed stable delivery. The ordinary `Build Windows` workflow merely validates web export on a Windows runner and should not be confused with a native app build.
 
 ## Required Windows QA
 
@@ -41,7 +41,7 @@ Report on [issue #18](https://github.com/sanskarIN/MeTodo/issues/18) with the ex
 
 ## Release decision
 
-**No automatic publication.** To call Windows supported/stable, finish runtime QA, pin dependencies via Cargo.lock, resolve installation/data-loss issues, obtain an independent protected-main review, configure owner-approved Authenticode signing if needed, verify the actual release candidate on the exact protected-main commit, and extend the separate manual promotion workflow to verify **the exact tested Windows installer hash** in addition to the web archive hash. The existing web-only release gate must not be silently bypassed.
+**No automatic publication.** To call Windows supported/stable, finish runtime QA, keep the committed Cargo.lock verified, resolve installation/data-loss issues, obtain an independent protected-main review, configure owner-approved Authenticode signing if needed, verify the actual release candidate on the exact protected-main commit, and extend the separate manual promotion workflow to verify **the exact tested Windows installer hash** in addition to the web archive hash. The existing web-only release gate must not be silently bypassed.
 
 References:
 - https://v2.tauri.app/start/prerequisites/
