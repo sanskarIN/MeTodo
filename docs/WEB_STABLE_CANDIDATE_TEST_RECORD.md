@@ -59,3 +59,7 @@ Copy the **direct issue-comment URL**, not the issue page URL. The manual public
 After required protected-main reviews/checks pass and QA has succeeded, privately set `METODO_RELEASE_APPROVED_SHA` to the same commit in GitHub. Review the `stable-release` protected environment and manually dispatch **Publish Tested MeTodo Web v1.0.0 (Manual Approval)** with version, approved commit, candidate run ID, tested web SHA-256, the issue #16 comment URL and browser QA confirmation.
 
 **Do not publish on missing or failed evidence. No Android APK/AAB is part of this release.**
+
+## Separate Windows-native QA
+
+A web browser QA pass does not validate an NSIS Windows installer, WebView2 file dialogs, OS startup, uninstall, or offline install. See [Windows native QA](WINDOWS_NATIVE_SUPPORT.md) and [issue #18](https://github.com/sanskarIN/MeTodo/issues/18).

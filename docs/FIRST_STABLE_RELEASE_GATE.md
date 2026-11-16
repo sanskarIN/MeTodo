@@ -2,6 +2,10 @@
 
 Updated: 2026-11-16
 
+## Windows native support under qualification
+
+Native Windows NSIS installer development is tracked in [issue #18](https://github.com/sanskarIN/MeTodo/issues/18) and [Windows build documentation](WINDOWS_NATIVE_SUPPORT.md). The experimental Tauri workflow builds an actual installer but **does not publish it**; it is not a substitute for the manual web release or an approved stable Windows installer. Promoting Windows to first-stable scope requires a real installer, exact hashes, Windows runtime and data-persistence testing, owner signing/trust decisions and an extension of the two-stage candidate/publish workflows. Android signing remains deferred.
+
 ## Decision and scope
 
 **NOT READY FOR PUBLICATION.** First stable v1.0.0 targets **one verifiable, static web archive only**. This is an intentional scope change from the previous Android + web candidate. Android source remains available for future development, but Android APK/AAB, Expo/EAS signing and physical Android tests are **not** required or promised for v1.0.0. Native Windows/macOS/Linux packages and iOS binaries are likewise deferred. Passing web exports on Windows/macOS/Linux runners **does not produce** installable native desktop applications.

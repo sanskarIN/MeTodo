@@ -67,3 +67,8 @@ Thumbs.db
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 .project-config.json
+
+# Tauri output (generated from tracked branding)
+/src-tauri/target/
+/src-tauri/icons/
+/src-tauri/gen/
