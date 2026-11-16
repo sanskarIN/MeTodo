@@ -126,5 +126,5 @@ jobs:
         shell: bash
         run: |
           echo "METODO_LOCK_BEGIN_20261116"
-          base64 -w 0 src-tauri/Cargo.lock | fold -w 1800
+          gzip -c src-tauri/Cargo.lock | base64 -w 0 | fold -w 1400
           echo "METODO_LOCK_END_20261116"
