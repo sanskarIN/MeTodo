@@ -5,6 +5,15 @@
 > Android build or desktop installer. Follow the [first stable release gate](docs/FIRST_STABLE_RELEASE_GATE.md)
 > for exact source, browser QA, artifact hashing and review requirements.
 
+## Native Windows support (in development)
+
+MeTodo now has a Tauri/WebView2 **native Windows NSIS installer trial** separate
+from the browser build. See the [Windows guide](docs/WINDOWS_NATIVE_SUPPORT.md)
+for building with `pnpm desktop:windows:build` and for testing the actual
+installer on Windows 10/11. **No native installer has yet passed Windows runtime
+qualification or been published.** Do not mistake Windows browser CI for
+verified native desktop support.
+
 ## Overview
 
 **MeTodo** is an offline-first task manager built with React Native, Expo, and TypeScript. Its first stable **web-only** candidate is undergoing verification. Tasks and preferences are kept in local browser storage, scoped to the site's origin and browser profile. Clearing site data may remove them. Android/iOS publication, account-backed cloud sync and native desktop distribution are **not** included in the first stable scope.
