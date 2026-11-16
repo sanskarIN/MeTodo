@@ -1,0 +1,109 @@
+name: Windows Native Installer (Trial)
+
+# Build an actual Windows installer as a CI artifact. Never publish a release.
+on:
+  pull_request:
+    paths:
+      - "src-tauri/**"
+      - "app/**"
+      - "lib/**"
+      - "assets/images/icon.png"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "tests/windows-native-workflow.test.ts"
+      - ".github/workflows/windows-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metodo-windows-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installer:
+    name: Build Windows NSIS installer
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+
+      - name: Setup Rust stable for native Windows
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install locked JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify TypeScript, tests, lint and security audit
+        shell: pwsh
+        run: |
+          pnpm check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm audit --prod --audit-level high
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build native Windows installer with offline WebView2 runtime
+        shell: pwsh
+        run: |
+          pnpm desktop:windows:build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Require actual Windows installer and write checksums
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" -File)
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one native NSIS setup.exe; found $($installers.Count)"
+          }
+          New-Item -ItemType Directory -Force "dist/windows-native" | Out-Null
+          $version = node -p "require('./package.json').version"
+          $destination = "dist/windows-native/MeTodo-v$version-windows-x64-setup.exe"
+          Copy-Item -LiteralPath $installers[0].FullName -Destination $destination
+          if ((Get-Item $destination).Length -lt 1024) { throw "Installer is unexpectedly small" }
+          $digest = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$digest  $([System.IO.Path]::GetFileName($destination))" |
+            Set-Content "dist/windows-native/SHA256SUMS" -Encoding ascii
+          $signature = Get-AuthenticodeSignature -LiteralPath $destination
+          "Installer SHA256: $digest" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          "Authenticode status (trial only): $($signature.Status)" |
+            Out-File $env:GITHUB_STEP_SUMMARY -Append
+          if ($signature.Status -ne "Valid") {
+            Write-Host "Unsigned trial build. Do not release as a trusted stable installer."
+          }
+
+      - name: Upload trial installer without publishing
+        uses: actions/upload-artifact@v4
+        with:
+          name: metodo-windows-native-trial
+          path: |
+            dist/windows-native/MeTodo-v*-windows-x64-setup.exe
+            dist/windows-native/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
