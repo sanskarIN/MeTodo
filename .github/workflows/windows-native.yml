@@ -107,3 +107,24 @@ jobs:
             dist/windows-native/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
+
+  lockfile:
+    name: Generate reviewed Rust dependency lockfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Resolve Rust dependency graph
+        run: cargo generate-lockfile --manifest-path src-tauri/Cargo.toml
+
+      - name: Print base64 lockfile for committing exact graph (temporary)
+        shell: bash
+        run: |
+          echo "METODO_LOCK_BEGIN_20261116"
+          base64 -w 0 src-tauri/Cargo.lock | fold -w 1800
+          echo "METODO_LOCK_END_20261116"
