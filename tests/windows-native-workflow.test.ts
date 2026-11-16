@@ -33,6 +33,8 @@ describe("MeTodo Windows builds a native installer rather than a web-only bundle
     expect(workflow).toContain("runs-on: windows-latest");
     expect(workflow).toContain("Build Windows NSIS installer");
     expect(workflow).toContain("Get-AuthenticodeSignature");
+    expect(workflow).toContain("node scripts/windows-web-smoke.mjs");
+    expect(workflow).toContain('"global.css"');
     expect(workflow).toContain("Get-FileHash");
     expect(workflow).toContain("metodo-windows-native-trial");
     expect(workflow).toContain("pnpm install --frozen-lockfile");

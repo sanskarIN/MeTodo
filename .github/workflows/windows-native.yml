@@ -6,7 +6,11 @@ on:
     paths:
       - "src-tauri/**"
       - "app/**"
+      - "components/**"
       - "lib/**"
+      - "global.css"
+      - "scripts/windows-web-smoke.mjs"
+      - "tests/windows-viewport-layout.test.ts"
       - "assets/images/icon.png"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -73,6 +77,14 @@ jobs:
           pnpm lint
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           pnpm audit --prod --audit-level high
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Smoke-test production web UI geometry in Microsoft Edge
+        shell: pwsh
+        run: |
+          pnpm desktop:windows:export
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/windows-web-smoke.mjs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build native Windows installer with offline WebView2 runtime
