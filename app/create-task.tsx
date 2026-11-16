@@ -4,12 +4,12 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useTaskContext } from "@/lib/task-context";
 import { useColors } from "@/hooks/use-colors";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Task, Priority } from "@/types";
 
 export default function CreateTaskScreen() {
   const router = useRouter();
-  const { addTask, categories } = useTaskContext();
+  const { addTask, categories, dataReadiness } = useTaskContext();
   const colors = useColors();
 
   const [title, setTitle] = useState("");
@@ -18,6 +18,15 @@ export default function CreateTaskScreen() {
   const [category, setCategory] = useState(categories[0]?.id || "");
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Persisted categories may hydrate after the first render. Never assign
+  // an old default category to a task after the user loads custom categories.
+  useEffect(() => {
+    if (dataReadiness !== "ready") return;
+    if (!categories.some(item => item.id === category)) {
+      setCategory(categories[0]?.id || "");
+    }
+  }, [categories, category, dataReadiness]);
 
   const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === "android") {
@@ -30,13 +39,17 @@ export default function CreateTaskScreen() {
   };
 
   const handleCreateTask = async () => {
+    if (dataReadiness !== "ready") {
+      Alert.alert("Local data not ready", "Please finish loading saved tasks before creating another task.");
+      return;
+    }
     if (!title.trim()) {
       Alert.alert("Missing title", "Please enter a task title");
       return;
     }
 
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
       title: title.trim(),
       description,
       priority,
@@ -60,6 +73,29 @@ export default function CreateTaskScreen() {
       Alert.alert("Unable to create task", "Please try again.");
     }
   };
+
+  if (dataReadiness !== "ready") {
+    return (
+      <ScreenContainer className="bg-background">
+        <View className="p-6">
+          <Text className="text-xl font-bold text-foreground">
+            {dataReadiness === "loading" ? "Loading local categories…" : "Local data needs recovery"}
+          </Text>
+          <Text className="text-muted mt-3">
+            {dataReadiness === "loading"
+              ? "Reading saved data before a new task can be created."
+              : "Cannot safely create tasks while saved data is unreadable."}
+          </Text>
+          {dataReadiness === "error" && (
+            <Pressable onPress={() => router.push("/backup-restore")}
+              accessibilityRole="button" className="bg-primary rounded-lg p-3 mt-4">
+              <Text className="text-white font-semibold">Open backup recovery</Text>
+            </Pressable>
+          )}
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer className="bg-background">

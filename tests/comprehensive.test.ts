@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import SearchUtil, { type SearchableTask } from '../lib/search-utils';
+import type { Task } from '../types';
 import { THEME_PRESETS } from '../lib/themes-preset';
 import AnalyticsDataService from '../lib/analytics-data-service';
 import { normalizeChartAnimationSettings } from '../lib/chart-animation-settings';
@@ -11,6 +12,13 @@ import {
   createChartAnimationSettingsTarget,
   isChartAnimationSettingsSection,
 } from '../lib/settings-navigation';
+import {
+  createTaskCalendarEventData,
+  findWritableCalendarOption,
+  getTaskCalendarBulkEligibility,
+  hasTaskCalendarLink,
+} from '../lib/task-calendar-utils';
+import { normalizeCalendarSelectionSettings } from '../lib/calendar-selection-settings';
 import {
   formatSignedMetric,
   getAnimationSpeedMultiplier,
@@ -448,5 +456,102 @@ describe('Live chart animation preview timing', () => {
     expect(getChartAnimationDuration(520, false, 'normal')).toBe(520);
     expect(getChartAnimationDuration(520, false, 'fast')).toBe(312);
     expect(getChartAnimationDuration(520, true, 'fast')).toBe(0);
+  });
+});
+describe('Device calendar task mapping', () => {
+  const dueDate = new Date(2026, 6, 14, 0, 0, 0, 0);
+
+  it('creates a deterministic linked-calendar payload for a dated task', () => {
+    const event = createTaskCalendarEventData({
+      id: 'calendar-task',
+      title: 'Prepare launch plan',
+      description: 'Finalize the cross-platform rollout checklist.',
+      dueDate,
+      priority: 'high',
+      category: 'work',
+    });
+
+    expect(event).not.toBeNull();
+    expect(event?.title).toBe('Prepare launch plan');
+    expect(event?.startDate.getHours()).toBe(9);
+    expect(event?.endDate.getTime()).toBe(event!.startDate.getTime() + 60 * 60 * 1000);
+    expect(event?.notes).toContain('Task ID: calendar-task');
+    expect(event?.notes).toContain('Priority: high');
+    expect(event?.alarms).toEqual([{ relativeOffset: -30 }]);
+  });
+
+  it('refuses calendar payloads without a usable due date and detects persisted links', () => {
+    expect(createTaskCalendarEventData({
+      id: 'undated-task',
+      title: 'Undated',
+      description: '',
+      dueDate: undefined,
+      priority: 'low',
+      category: 'personal',
+    })).toBeNull();
+    expect(hasTaskCalendarLink({ calendarEvent: undefined })).toBe(false);
+    expect(hasTaskCalendarLink({
+      calendarEvent: {
+        eventId: 'event-1',
+        calendarId: 'calendar-1',
+        linkedAt: dueDate,
+        lastSyncedAt: dueDate,
+      },
+    })).toBe(true);
+  });
+
+  it('finds only an explicitly preferred writable calendar and normalizes stored preference values', () => {
+    const calendars = [
+      { id: 'work', title: 'Work', color: '#0088cc' },
+      { id: 'personal', title: 'Personal', color: '#cc0088' },
+    ];
+
+    expect(findWritableCalendarOption(calendars, 'personal')).toEqual(calendars[1]);
+    expect(findWritableCalendarOption(calendars, 'missing')).toBeNull();
+    expect(findWritableCalendarOption(calendars, null)).toBeNull();
+    expect(normalizeCalendarSelectionSettings({ preferredCalendarId: 'work', preferredCalendarTitle: 'Work' }))
+      .toEqual({ preferredCalendarId: 'work', preferredCalendarTitle: 'Work' });
+    expect(normalizeCalendarSelectionSettings({ preferredCalendarId: 123, preferredCalendarTitle: [] }))
+      .toEqual({ preferredCalendarId: null, preferredCalendarTitle: null });
+  });
+
+  it('identifies only unlinked tasks with valid due dates as eligible for bulk calendar linking', () => {
+    const eligibility = getTaskCalendarBulkEligibility([
+      {
+        id: 'eligible',
+        title: 'Eligible task',
+        description: '',
+        dueDate,
+        priority: 'medium',
+        category: 'work',
+      },
+      {
+        id: 'already-linked',
+        title: 'Linked task',
+        description: '',
+        dueDate,
+        priority: 'high',
+        category: 'work',
+        calendarEvent: { eventId: 'event-2', calendarId: 'calendar-2', linkedAt: dueDate, lastSyncedAt: dueDate },
+      },
+      {
+        id: 'no-date',
+        title: 'Undated task',
+        description: '',
+        priority: 'low',
+        category: 'personal',
+      },
+      {
+        id: 'bad-date',
+        title: 'Malformed date task',
+        description: '',
+        dueDate: new Date('not-a-date'),
+        priority: 'low',
+        category: 'personal',
+      },
+    ] as Task[]);
+
+    expect(eligibility.eligibleTasks.map((task) => task.id)).toEqual(['eligible']);
+    expect(eligibility.ineligibleTasks.map((task) => task.reason)).toEqual(['already_linked', 'missing_due_date', 'invalid_due_date']);
   });
 });

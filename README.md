@@ -1,8 +1,13 @@
-# MeTodo - Complete Task Management Mobile Application
+# MeTodo — Local-first personal task manager
+
+> **Release status (2026-11-16): first stable release not yet approved.** The
+> first supported distribution is planned as a **tested web archive**, not an
+> Android build or desktop installer. Follow the [first stable release gate](docs/FIRST_STABLE_RELEASE_GATE.md)
+> for exact source, browser QA, artifact hashing and review requirements.
 
 ## Overview
 
-**MeTodo** is a comprehensive, production-ready mobile task management application built with React Native, Expo, and TypeScript. It provides a complete solution for personal task management with offline-first architecture, 50+ themes, advanced features, and extensive documentation.
+**MeTodo** is an offline-first task manager built with React Native, Expo, and TypeScript. Its first stable **web-only** candidate is undergoing verification. Tasks and preferences are kept in local browser storage, scoped to the site's origin and browser profile. Clearing site data may remove them. Android/iOS publication, account-backed cloud sync and native desktop distribution are **not** included in the first stable scope.
 
 **Support Email:** supportramsandesh@gmail.com  
 **Buy Me a Coffee:** [buymeacoffee.com/sanskarIN](https://www.buymeacoffee.com/sanskarIN)
@@ -29,84 +34,52 @@
 18. [Component Implementation Review Report](#component-implementation-review-report)
 19. [Security and Performance Analysis Report](#security-and-performance-analysis-report)
 
-## Features
+## Features and verified release scope
 
-### Core Task Management
-- **Complete CRUD Operations:** Create, read, update, and delete tasks with full functionality
-- **Task Priorities:** Set task priority levels (Low, Medium, High, Critical) with color-coded indicators
-- **Due Dates:** Assign and manage task due dates with visual indicators and reminders
-- **Task Categories:** Organize tasks into custom categories for better organization
-- **Tags and Labels:** Add multiple tags to tasks for flexible filtering and organization
-- **Task Status:** Mark tasks as completed, pending, or in-progress with visual feedback
-- **Subtasks:** Break down complex tasks into smaller subtasks with individual tracking
-- **Recurring Tasks:** Create recurring tasks with customizable patterns (daily, weekly, monthly, yearly)
-- **Smart Reminders:** Set intelligent reminders with quiet hours support and smart scheduling
-- **Rich Text Notes:** Add detailed notes to tasks with formatting support
-- **Task Search:** Full-text search across all tasks with advanced filtering options
-- **Batch Operations:** Perform bulk actions on multiple tasks simultaneously
+The features below describe the **current candidate's source implementation**,
+not a guarantee of browser compatibility. Testing the exact production web
+archive and protected-main review are required before a stable GitHub release.
 
-### Avatar Creator
-- **Customizable Avatars:** Create personalized avatars with multiple customization options
-- **Hair Styles:** 5 different hair styles with color customization
-- **Eye Shapes:** 4 different eye shapes with color options
-- **Accessories:** Multiple accessories to personalize avatars
-- **Skin Tones:** 5 different skin tone options
-- **Avatar Preview:** Real-time preview of avatar customization
-- **Avatar Management:** Save, load, and manage multiple avatars
-- **Avatar Display:** Display selected avatar throughout the app
+### Core personal task workflow
 
-### Themes and Customization
-- **50+ Pre-installed Themes:** Comprehensive collection of themes across multiple categories
-- **Light Themes:** 10 light-themed color schemes for daytime use
-- **Dark Themes:** 10 dark-themed color schemes for nighttime use
-- **Vibrant Themes:** 10 vibrant and colorful themes
-- **Pastel Themes:** 10 soft pastel-colored themes
-- **Professional Themes:** 10 professional business-oriented themes
-- **Custom Theme Creator:** Create personalized themes with color picker
-- **Theme Persistence:** Save and load custom themes
-- **Dark Mode Support:** Automatic dark mode switching based on system preferences
-- **Theme Import/Export:** Share themes with other users
+- Create, edit, complete and delete personal tasks saved locally.
+- Low, medium and high priorities, task descriptions and due dates.
+- Category preferences, task lists, and basic completion statistics.
+- Theme selection, custom themes and avatar preferences.
+- Web JSON backup/restore: download a **JSON file**, then select a file to
+  restore with explicit confirmation and interrupted-write recovery.
+  Save backups privately outside the browser; do not rely on browser storage alone.
+- Serialized local storage protects against overlapping updates. Unreadable
+  storage does not silently become an empty task list.
 
-### Developer Options
-- **30+ Debugging Tools:** Comprehensive debugging and monitoring tools
-- **Performance Monitoring:** Monitor app performance and frame rates
-- **Memory Usage:** Track memory consumption and optimization
-- **Storage Inspector:** View and manage local storage
-- **Network Activity:** Monitor network requests and responses
-- **Layout Debugging:** Visualize component boundaries and layout issues
-- **Touch Target Display:** Show interactive element boundaries
-- **Animation Controls:** Toggle and control animations
-- **Font Size Adjuster:** Test different font sizes
-- **Accessibility Inspector:** Check accessibility compliance
-- **Color Contrast Checker:** Verify color contrast ratios
-- **Device Information:** Display device and system information
-- **Debug Console:** In-app console for debugging
-- **Crash Reporter:** Capture and report crashes
-- **Performance Profiler:** Profile app performance
-- **Gesture Debugger:** Debug gesture interactions
+### Explicitly experimental or out of scope for first stable
 
-### Advanced Features
-- **Offline Sync Queue:** Automatic synchronization of changes when connection returns
-- **Voice Task Creation:** Create tasks using voice input with NLP processing
-- **Smart Notifications:** Intelligent push notifications with quiet hours
-- **Team Collaboration:** Share tasks and collaborate with team members
-- **Task Templates:** Save and reuse task configurations
-- **Advanced Search:** Full-text search with multi-filter support
-- **Batch Operations:** Bulk edit, delete, and organize tasks
-- **Export/Import:** Export tasks to CSV/JSON and import from files
-- **Analytics Dashboard:** View productivity metrics and statistics
-- **Recurring Task Automation:** Automatic task generation for recurring patterns
-- **Productivity Insights:** Learn from completion patterns and habits
+- **Cloud synchronization:** not production-ready or account-backed.
+  Saving locally does not automatically synchronize across devices.
+- **Team collaboration:** current in-memory/service prototypes do not establish
+  authenticated, persistent multi-user collaboration.
+- **Voice capture:** text parsing support does not constitute a working
+  microphone-to-task experience.
+- **Automated reminders and recurring workflows:** service-level code exists,
+  but creation/scheduling/cancellation must be verified end to end on a device
+  before being advertised as supported.
+- **Native Android/iOS and desktop binaries:** v1.0.0 ships no APK, AAB,
+  IPA, Windows installer, Linux package or macOS DMG.
+- **Device-calendar integration:** native-only development code is retained,
+  but the web release does not claim verified calendar linking.
+- **Offline initial website loading:** local storage is not proof of an
+  installed PWA or guaranteed offline page loading.
+- Other prototype, analytics, templating and developer screens may evolve
+  independently of the first supported release surface.
 
-### Analytics and Insights
-- **Completion Statistics:** Track task completion rates and trends
-- **Productivity Metrics:** Monitor productivity over time
-- **Category Analytics:** Analyze tasks by category and priority
-- **Time Tracking:** Track time spent on tasks
-- **Completion Trends:** Visualize completion trends with charts
-- **Most Productive Hours:** Identify your most productive times
-- **Performance Reports:** Generate detailed productivity reports
-- **Export Analytics:** Export analytics data for external analysis
+### Release verification
+
+Review the [first stable release gate](docs/FIRST_STABLE_RELEASE_GATE.md),
+[dependency audit](docs/SECURITY_AUDIT_FIRST_STABLE.md), and
+[web browser QA template](docs/WEB_STABLE_CANDIDATE_TEST_RECORD.md)
+for exact source commits, missing approvals, verified artifacts and manual QA.
+Historical feature reports elsewhere in this repository are development notes
+and **must not be read as proof that every advertised feature ships**.
 
 ## Project Structure
 
@@ -320,7 +293,7 @@ To install and run MeTodo locally, follow these steps:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/SanskarYadav/MeTodo.git
+    git clone https://github.com/sanskarIN/MeTodo.git
     cd MeTodo
     ```
 
@@ -340,8 +313,9 @@ To install and run MeTodo locally, follow these steps:
     This will start both the Metro bundler for the Expo app and the Node.js backend server.
 
 5.  **Open the app:**
-    -   **iOS/Android:** Scan the QR code displayed in your terminal with the Expo Go app.
-    -   **Web:** Open your browser to the URL provided in the terminal (usually `http://localhost:8081`).
+    -   **Web development:** Open the browser URL provided in the terminal (usually `http://localhost:8081`).
+    -   **Production web export:** `pnpm exec expo export --platform web --output-dir dist/web`; serve `dist/web` using an HTTP(S) static host to test the actual export.
+    -   **Native platforms:** Android and iOS are development targets only, not published v1.0.0 distributions.
 
 ## Getting Started
 
@@ -359,10 +333,10 @@ For more detailed instructions, refer to the [DEVELOPMENT_SETUP.md](./docs/how-t
 MeTodo follows a modular and scalable architecture, leveraging the power of React Native, Expo, and TypeScript. Key architectural principles include:
 
 -   **Client-Server Separation:** Clear distinction between the mobile client and the optional Node.js backend server.
--   **Offline-First Design:** Prioritizes local data storage and synchronization for a seamless user experience even without an internet connection.
+-   **Offline-First Design:** Prioritizes local task and preference storage. Production account-backed synchronization is not implemented.
 -   **Component-Based UI:** Reusable and modular UI components for rapid development and consistency.
 -   **Type-Safe Development:** Extensive use of TypeScript for compile-time error checking and improved code quality.
--   **Scalable Backend:** Optional Node.js backend with tRPC, Drizzle ORM, and S3 storage for advanced features like user authentication, real-time collaboration, and data synchronization.
+-   **Backend Prototypes:** A Node.js/tRPC/Drizzle service tree exists, but authenticated cloud sync, multi-user collaboration and hosted persistence remain outside the initial stable product scope.
 
 For a deep dive into the architecture, refer to the [ARCHITECTURE.md](./docs/technical/ARCHITECTURE.md).
 
@@ -437,7 +411,7 @@ For a detailed analysis of the entire project's code quality, feature implementa
 
 ## Feature Verification Report
 
-For a detailed report on the verification and testing of all 100+ features, refer to the [FEATURE_VERIFICATION_REPORT.md](./docs/FEATURE_VERIFICATION_REPORT.md).
+For historical feature proposals and internal verification notes, see [FEATURE_VERIFICATION_REPORT.md](./FEATURE_VERIFICATION_REPORT.md). **It does not certify 100+ production-ready features.**
 
 ## Type Safety and Code Quality Report
 
