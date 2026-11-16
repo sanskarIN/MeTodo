@@ -2,10 +2,8 @@
 import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
-// Bundle ID format: space.manus.<project_name_dots>.<timestamp>
-// e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
-// Bundle ID can only contain letters, numbers, and dots
-// Android requires each dot-separated segment to start with a letter
+// Keep the current package identifier unchanged until the release owner
+// approves the permanent Android/iOS application identity before signing.
 const rawBundleId = "com.app.metodo";
 const bundleId =
   rawBundleId
@@ -20,11 +18,9 @@ const bundleId =
       // Prefix with 'x' if segment starts with a digit
       return /^[a-zA-Z]/.test(segment) ? segment : "x" + segment;
     })
-    .join(".") || "space.manus.app";
-// Extract timestamp from bundle ID and prefix with "manus" for deep link scheme
-// e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
-const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
-const schemeFromBundleId = `manus${timestamp}`;
+    .join(".") || "com.app.metodo";
+// Stable, branded Expo deep link scheme; no template-agent prefixes.
+const appScheme = "metodo";
 
 const env = {
   // App branding - update these values directly (do not use env vars)
@@ -32,7 +28,7 @@ const env = {
   appSlug: "metodo",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "/manus-storage/metodo-logo-main_31adc223.png",
+  logoUrl: "/manus-storage/metodo-app-icon_642c8994.png",
   // Branding asset URLs
   logoTextUrl: "/manus-storage/metodo-logo-text_9ebebd2c.png",
   bannerUrl: "/manus-storage/metodo-banner_73c4b3eb.png",
@@ -44,7 +40,7 @@ const env = {
   iconAvatarUrl: "/manus-storage/metodo-icon-avatar_ea3735f9.png",
   iconThemesUrl: "/manus-storage/metodo-icon-themes_dc961362.png",
   appIconUrl: "/manus-storage/metodo-icon_a1a34a6e.png",
-  scheme: schemeFromBundleId,
+  scheme: appScheme,
   iosBundleId: bundleId,
   androidPackage: bundleId,
 };
@@ -75,7 +71,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS"],
+    permissions: ["POST_NOTIFICATIONS", "READ_CALENDAR", "WRITE_CALENDAR"],
     intentFilters: [
       {
         action: "VIEW",
@@ -97,6 +93,12 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    [
+      "expo-calendar",
+      {
+        calendarPermission: "Allow MeTodo to add and update deadlines in your calendar.",
+      },
+    ],
     [
       "expo-audio",
       {

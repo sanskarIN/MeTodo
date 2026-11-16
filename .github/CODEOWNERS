@@ -1,0 +1,17 @@
+# MeTodo repository ownership
+# The repository owner is the default reviewer for all changes.
+* @sanskarIN
+
+# CI/CD and repository policy must always receive code-owner review.
+/.github/ @sanskarIN
+
+# Dependency and release configuration.
+/package.json @sanskarIN
+/pnpm-lock.yaml @sanskarIN
+/app.config.ts @sanskarIN
+
+# Security-sensitive application and data layers.
+/server/ @sanskarIN
+/drizzle/ @sanskarIN
+/docs/DEPENDENCY_SECURITY_REVIEW.md @sanskarIN
+/docs/GITHUB_SECURITY_HARDENING.md @sanskarIN

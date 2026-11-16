@@ -1,0 +1,207 @@
+name: Publish Tested MeTodo Web v1.0.0 (Manual Approval)
+
+# Stage 2: only promote an independently browser-tested archive from a
+# successful protected-main candidate workflow run. No rebuild or Android APK.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact version in package.json (for example 1.0.0)"
+        type: string
+        required: true
+      approvedCommit:
+        description: "Full approved SHA on protected main"
+        type: string
+        required: true
+      candidateRunId:
+        description: "Successful Build Web Release Candidate workflow run ID"
+        type: string
+        required: true
+      testedWebSha256:
+        description: "SHA256 of the downloaded and browser-tested web archive"
+        type: string
+        required: true
+      browserTestEvidenceUrl:
+        description: "Direct URL of owner/collaborator browser QA comment on issue #16"
+        type: string
+        required: true
+      confirmBrowserTests:
+        description: "I independently tested the exact web candidate and reviewed QA evidence"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metodo-manual-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify web candidate and publish stable GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: stable-release
+    permissions:
+      contents: write
+      actions: read
+      checks: read
+      issues: read
+    steps:
+      - name: Checkout protected main
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Require reviewed source, owner approval and browser testing
+        shell: bash
+        env:
+          APPROVED_SHA: ${{ inputs.approvedCommit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidateRunId }}
+          TESTED_WEB_SHA256: ${{ inputs.testedWebSha256 }}
+          TEST_EVIDENCE_URL: ${{ inputs.browserTestEvidenceUrl }}
+          CONFIRM_BROWSER_TESTS: ${{ inputs.confirmBrowserTests }}
+          OWNER_RELEASE_APPROVAL: ${{ secrets.METODO_RELEASE_APPROVED_SHA }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Stable publication is allowed only from protected main."
+            exit 1
+          fi
+          if [[ ! "$APPROVED_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ "$GITHUB_SHA" != "$APPROVED_SHA" ]]; then
+            echo "::error::Approved source SHA differs from current main."
+            exit 1
+          fi
+          if [[ -z "$OWNER_RELEASE_APPROVAL" ]] || [[ "$OWNER_RELEASE_APPROVAL" != "$GITHUB_SHA" ]]; then
+            echo "::error::Release-owner approval secret must match the reviewed commit."
+            exit 1
+          fi
+          if [[ "$CONFIRM_BROWSER_TESTS" != "true" ]]; then
+            echo "::error::Browser smoke testing and manual owner review are required."
+            exit 1
+          fi
+          if [[ ! "$CANDIDATE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Candidate workflow run ID must be a positive integer."
+            exit 1
+          fi
+          if [[ ! "$TESTED_WEB_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Tested web artifact hash must be 64 lowercase hex characters."
+            exit 1
+          fi
+          if [[ ! "$TEST_EVIDENCE_URL" =~ ^https://github\.com/sanskarIN/MeTodo/issues/16#issuecomment-[0-9]+$ ]]; then
+            echo "::error::Supply the direct link to the web QA comment on issue #16."
+            exit 1
+          fi
+          APP_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$APP_VERSION" != "$RELEASE_VERSION" ]]; then
+            echo "::error::Version does not match package.json."
+            exit 1
+          fi
+          if git show-ref --verify --quiet "refs/tags/v$RELEASE_VERSION"; then
+            echo "::error::Release tag exists and must never be overwritten."
+            exit 1
+          fi
+
+      - name: Prove web candidate was built by a successful exact-SHA main run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidateRunId }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN_ID" > web-candidate-run.json
+          jq -e --arg sha "$GITHUB_SHA" '
+            .head_sha == $sha and
+            .head_branch == "main" and
+            .event == "workflow_dispatch" and
+            .status == "completed" and
+            .conclusion == "success" and
+            (.path | endswith("/.github/workflows/release-workflow.yml@refs/heads/main"))
+          ' web-candidate-run.json > /dev/null || {
+            echo "::error::Candidate run must be a successful manual web build from this exact main SHA."
+            exit 1
+          }
+          gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" \
+            --jq '.check_runs[] | select(.status == "completed" and .conclusion == "success") | .name' \
+            > passed-checks.txt
+          if ! grep -Fxq "Validate MeTodo" passed-checks.txt; then
+            echo "::error::The final protected-main commit has not passed core CI."
+            exit 1
+          fi
+
+      - name: Validate independently submitted browser QA evidence on issue 16
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_EVIDENCE_URL: ${{ inputs.browserTestEvidenceUrl }}
+          APPROVED_SHA: ${{ inputs.approvedCommit }}
+          TESTED_WEB_SHA256: ${{ inputs.testedWebSha256 }}
+        run: |
+          set -euo pipefail
+          comment_id="$(printf '%s' "$TEST_EVIDENCE_URL" | sed -E 's/.*#issuecomment-([0-9]+)$/\1/')"
+          if [[ ! "$comment_id" =~ ^[0-9]+$ ]]; then
+            echo "::error::Evidence URL has no valid GitHub issue comment ID."
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" > web-qa-evidence.json
+          jq -e --arg repo "$GITHUB_REPOSITORY" \
+            --arg sha "$APPROVED_SHA" \
+            --arg web "$TESTED_WEB_SHA256" '
+            .issue_url == ("https://api.github.com/repos/" + $repo + "/issues/16") and
+            (.author_association == "OWNER" or .author_association == "COLLABORATOR" or .author_association == "MEMBER") and
+            (.body | contains($sha) and contains($web) and contains("Web QA: PASS"))
+          ' web-qa-evidence.json > /dev/null || {
+            echo "::error::Evidence must be owner/collaborator-authored on issue #16 with SHA, web hash, and Web QA: PASS."
+            exit 1
+          }
+
+      - name: Download only the proven web candidate artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.candidateRunId }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          name: metodo-candidate-web
+          path: release-assets
+
+      - name: Verify exact inspected artifact and candidate manifest
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          TESTED_WEB_SHA256: ${{ inputs.testedWebSha256 }}
+        run: |
+          set -euo pipefail
+          web="release-assets/MeTodo-v$RELEASE_VERSION-web.tar.gz"
+          test -s "$web"
+          test -s release-assets/SHA256SUMS-candidate
+          tar -tzf "$web" > /dev/null
+          echo "$TESTED_WEB_SHA256  $web" | sha256sum --check --status || {
+            echo "::error::Candidate web file differs from the inspected and approved file."
+            exit 1
+          }
+          grep -Fxq "$TESTED_WEB_SHA256  MeTodo-v$RELEASE_VERSION-web.tar.gz" release-assets/SHA256SUMS-candidate || {
+            echo "::error::Candidate manifest hash does not match the browser-tested archive."
+            exit 1
+          }
+          (
+            cd release-assets
+            sha256sum "MeTodo-v$RELEASE_VERSION-web.tar.gz" > SHA256SUMS
+            cat SHA256SUMS
+          )
+
+      - name: Publish only the tested web archive with its checksums
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: MeTodo v${{ inputs.version }} (Web)
+          generate_release_notes: true
+          prerelease: false
+          make_latest: true
+          draft: false
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/MeTodo-v*-web.tar.gz
+            release-assets/SHA256SUMS

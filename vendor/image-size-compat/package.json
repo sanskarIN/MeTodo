@@ -1,0 +1,11 @@
+{
+  "name": "image-size",
+  "version": "2.0.3",
+  "private": true,
+  "description": "Metro-compatible adapter that delegates image decoding to patched image-size",
+  "type": "commonjs",
+  "main": "index.cjs",
+  "dependencies": {
+    "image-size-patched": "npm:image-size@2.0.3"
+  }
+}

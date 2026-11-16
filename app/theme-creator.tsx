@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, TouchableOpacity, TextInput, Pressable } from "react-native";
+import { Alert, ScrollView, Text, View, TouchableOpacity, TextInput, Pressable } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useTaskContext } from "@/lib/task-context";
 import { useColors } from "@/hooks/use-colors";
@@ -25,7 +25,7 @@ export default function ThemeCreatorScreen() {
 
   const handleSaveTheme = async () => {
     if (!themeName.trim()) {
-      alert("Please enter a theme name");
+      Alert.alert("Missing theme name", "Please enter a theme name.");
       return;
     }
 
@@ -46,8 +46,13 @@ export default function ThemeCreatorScreen() {
       createdAt: new Date(),
     };
 
-    await addCustomTheme(newTheme);
-    router.back();
+    try {
+      await addCustomTheme(newTheme);
+      router.back();
+    } catch (error) {
+      console.error("Custom theme save failed:", error);
+      Alert.alert("Unable to save theme", "Your custom theme was not saved. Please try again.");
+    }
   };
 
   const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string) => void }) => (
