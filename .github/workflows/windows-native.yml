@@ -56,6 +56,13 @@ jobs:
       - name: Install locked JS dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Ensure Cargo.lock is committed and unchanged
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "src-tauri/Cargo.lock")) { throw "Cargo.lock must be committed" }
+          cargo metadata --locked --manifest-path src-tauri/Cargo.toml --no-deps --format-version 1 | Out-Null
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Verify TypeScript, tests, lint and security audit
         shell: pwsh
         run: |
@@ -107,24 +114,3 @@ jobs:
             dist/windows-native/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
-
-  lockfile:
-    name: Generate reviewed Rust dependency lockfile
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Setup Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Resolve Rust dependency graph
-        run: cargo generate-lockfile --manifest-path src-tauri/Cargo.toml
-
-      - name: Print base64 lockfile for committing exact graph (temporary)
-        shell: bash
-        run: |
-          echo "METODO_LOCK_BEGIN_20261116"
-          gzip -c src-tauri/Cargo.lock | base64 -w 0 | fold -w 1400
-          echo "METODO_LOCK_END_20261116"

@@ -16,6 +16,9 @@ describe("MeTodo Windows builds a native installer rather than a web-only bundle
     expect(config.bundle.windows.webviewInstallMode.type).toBe("offlineInstaller");
     expect(config.app.security.csp).toContain("object-src 'none'");
     expect(cargo).toContain('tauri = { version = "=2.12.3"');
+    const lock = fs.readFileSync("src-tauri/Cargo.lock", "utf8");
+    expect(lock).toContain('name = "tauri"');
+    expect(lock).toContain('name = "metodo-desktop"');
   });
 
   it("exports web then generates brand icons before invoking the native compiler", () => {
