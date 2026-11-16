@@ -1,3 +1,5 @@
+> **DEFERRED AS OF 2026-11-16:** v1.0.0 is **web-only**. This record is retained for potential later Android distribution; it is not a first-stable release blocker. See [web QA record](WEB_STABLE_CANDIDATE_TEST_RECORD.md).
+
 # MeTodo v1.0.0 — Signed Android candidate verification record
 
 **Status: NOT TESTED — fill with direct device evidence before stable release.**

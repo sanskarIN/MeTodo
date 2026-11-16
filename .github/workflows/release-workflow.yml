@@ -1,7 +1,7 @@
-name: Build Signed Release Candidate (Android + Web)
+name: Build Web Release Candidate
 
-# Stage 1: manually build signed artifacts from protected main. Never publish.
-# Stage 2 is a separate, owner-approved workflow after device testing.
+# Stage 1: build a reviewed web artifact from protected main. Never publish.
+# Android signing and native distributions are deliberately out of v1.0.0 scope.
 on:
   workflow_dispatch:
     inputs:
@@ -10,7 +10,7 @@ on:
         type: string
         required: true
       approvedCommit:
-        description: "Full reviewed SHA of the protected main commit"
+        description: "Full reviewed SHA on protected main"
         type: string
         required: true
 
@@ -22,17 +22,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Verify release source and export web
+  web:
+    name: Build verified web candidate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout full source
+      - name: Checkout exact source and tags
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Verify protected main and exact version
+      - name: Enforce reviewed protected-main source and version
         shell: bash
         env:
           APPROVED_SHA: ${{ inputs.approvedCommit }}
@@ -40,11 +40,11 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "::error::Release must be dispatched from protected main."
+            echo "::error::Release candidates must come from protected main."
             exit 1
           fi
           if [[ ! "$APPROVED_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ "$APPROVED_SHA" != "$GITHUB_SHA" ]]; then
-            echo "::error::Approved SHA does not match the exact source commit."
+            echo "::error::Approved SHA must equal the checked-out main commit."
             exit 1
           fi
           APP_VERSION="$(node -p "require('./package.json').version")"
@@ -53,7 +53,7 @@ jobs:
             exit 1
           fi
           if git show-ref --verify --quiet "refs/tags/v$RELEASE_VERSION"; then
-            echo "::error::Release tag already exists. Review existing release instead of overwriting."
+            echo "::error::Release tag already exists; do not overwrite a stable release."
             exit 1
           fi
 
@@ -71,7 +71,7 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Refuse release with high or critical production dependency advisories
+      - name: Refuse critical or high production dependency advisories
         run: pnpm audit --prod --audit-level high
 
       - name: TypeScript
@@ -83,123 +83,35 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Build server
+      - name: Build server bundle
         run: pnpm build
 
-      - name: Export browser app
+      - name: Export production browser app
         run: pnpm exec expo export --platform web --output-dir dist/web
 
-      - name: Package web distribution
+      - name: Verify and package static web archive
         shell: bash
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          test -f dist/web/index.html
+          test -s dist/web/index.html
+          test "$(find dist/web -type f | wc -l)" -gt 1
           tar -czf "dist/MeTodo-v$RELEASE_VERSION-web.tar.gz" -C dist/web .
           test -s "dist/MeTodo-v$RELEASE_VERSION-web.tar.gz"
+          tar -tzf "dist/MeTodo-v$RELEASE_VERSION-web.tar.gz" > /dev/null
+          (
+            cd dist
+            sha256sum "MeTodo-v$RELEASE_VERSION-web.tar.gz" > SHA256SUMS-candidate
+            cat SHA256SUMS-candidate
+          )
 
-      - name: Upload browser distribution
+      - name: Upload web candidate without publishing
         uses: actions/upload-artifact@v4
         with:
           name: metodo-candidate-web
-          path: dist/MeTodo-v*-web.tar.gz
-          if-no-files-found: error
-          retention-days: 30
-
-  android:
-    name: Build signed Android APK with EAS
-    needs: validate
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    # Owner sets up an Expo project and managed signing credentials separately.
-    # Environment can require a reviewer before EAS credentials are accessible.
-    environment: eas-signing
-    steps:
-      - name: Checkout exact source
-        uses: actions/checkout@v5
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.0
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: "22.13.0"
-          cache: pnpm
-
-      - name: Install locked dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Require configured Expo authorization
-        shell: bash
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          if [[ -z "$EXPO_TOKEN" ]]; then
-            echo "::error::Configure EXPO_TOKEN and EAS project/signing credentials before a signed build."
-            exit 1
-          fi
-
-      - name: Request signed installable APK
-        shell: bash
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          set -euo pipefail
-          npx --yes eas-cli@latest build \
-            --platform android \
-            --profile production-apk \
-            --non-interactive \
-            --wait \
-            --json > eas-android-build.json
-
-      - name: Verify and download EAS build
-        shell: bash
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          mkdir -p release-android
-          node scripts/download-eas-android-build.mjs \
-            eas-android-build.json \
-            "release-android/MeTodo-v$RELEASE_VERSION-android.apk"
-
-      - name: Verify actual APK signature with Android SDK
-        shell: bash
-        run: |
-          set -euo pipefail
-          apk="release-android/MeTodo-v${{ inputs.version }}-android.apk"
-          test -s "$apk"
-          tool="$(find "${ANDROID_HOME}/build-tools" -mindepth 2 -maxdepth 2 -name apksigner -type f | sort -V | tail -1)"
-          if [[ -z "$tool" ]]; then
-            echo "::error::Android APK signing verifier missing."
-            exit 1
-          fi
-          "$tool" verify --verbose --print-certs "$apk" | tee release-android/signature-report.txt
-          if grep -Eiq 'Signer #[0-9]+ certificate DN: .*CN=Android Debug' release-android/signature-report.txt; then
-            echo "::error::Debug signing certificate is prohibited for a stable candidate."
-            exit 1
-          fi
-          sha256sum "$apk" | tee release-android/SHA256SUMS-candidate
-
-      - name: Upload APK signing verification report
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-signature-evidence
           path: |
-            release-android/signature-report.txt
-            release-android/SHA256SUMS-candidate
+            dist/MeTodo-v*-web.tar.gz
+            dist/SHA256SUMS-candidate
           if-no-files-found: error
           retention-days: 30
-
-      - name: Upload production-signed Android APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: metodo-candidate-android
-          path: release-android/MeTodo-v*-android.apk
-          if-no-files-found: error
-          retention-days: 30
-

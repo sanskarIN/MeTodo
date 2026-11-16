@@ -1,14 +1,13 @@
 # MeTodo — Local-first personal task manager
 
-> **Release status (2026-11-14): first stable release not yet approved.** The
-> version string and earlier audit documents describe intended functionality,
-> but a published stable GitHub release and verified production installers are
-> not yet available. Follow the [first stable release gate](docs/FIRST_STABLE_RELEASE_GATE.md)
-> for current build, testing, signing and review requirements.
+> **Release status (2026-11-16): first stable release not yet approved.** The
+> first supported distribution is planned as a **tested web archive**, not an
+> Android build or desktop installer. Follow the [first stable release gate](docs/FIRST_STABLE_RELEASE_GATE.md)
+> for exact source, browser QA, artifact hashing and review requirements.
 
 ## Overview
 
-**MeTodo** is an offline-first task manager built with React Native, Expo, and TypeScript. Its first stable **Android + web** candidate is undergoing verification. Tasks and preferences are saved on the device; account-backed cloud sync and native desktop/iOS distribution are **not** included in the first stable scope.
+**MeTodo** is an offline-first task manager built with React Native, Expo, and TypeScript. Its first stable **web-only** candidate is undergoing verification. Tasks and preferences are kept in local browser storage, scoped to the site's origin and browser profile. Clearing site data may remove them. Android/iOS publication, account-backed cloud sync and native desktop distribution are **not** included in the first stable scope.
 
 **Support Email:** supportramsandesh@gmail.com  
 **Buy Me a Coffee:** [buymeacoffee.com/sanskarIN](https://www.buymeacoffee.com/sanskarIN)
@@ -38,21 +37,18 @@
 ## Features and verified release scope
 
 The features below describe the **current candidate's source implementation**,
-not a guarantee of device compatibility. Signed Android APK testing and
-protected-main review are required before a stable GitHub release.
+not a guarantee of browser compatibility. Testing the exact production web
+archive and protected-main review are required before a stable GitHub release.
 
 ### Core personal task workflow
 
 - Create, edit, complete and delete personal tasks saved locally.
 - Low, medium and high priorities, task descriptions and due dates.
 - Category preferences, task lists, and basic completion statistics.
-- Calendar event linking and bulk linking on supported devices, subject to
-  calendar permissions and device smoke testing.
 - Theme selection, custom themes and avatar preferences.
-- JSON backup/restore: a downloadable file on web or a shareable **JSON file**
-  on Android; JSON import via web file selection or the Android document picker.
-  Restoration requires confirmation and retains a recovery journal for
-  interrupted writes.
+- Web JSON backup/restore: download a **JSON file**, then select a file to
+  restore with explicit confirmation and interrupted-write recovery.
+  Save backups privately outside the browser; do not rely on browser storage alone.
 - Serialized local storage protects against overlapping updates. Unreadable
   storage does not silently become an empty task list.
 
@@ -67,8 +63,12 @@ protected-main review are required before a stable GitHub release.
 - **Automated reminders and recurring workflows:** service-level code exists,
   but creation/scheduling/cancellation must be verified end to end on a device
   before being advertised as supported.
-- **Desktop native binaries and public iOS distribution:** platform validation
-  is not equivalent to a Windows installer, Linux package, macOS DMG or iOS IPA.
+- **Native Android/iOS and desktop binaries:** v1.0.0 ships no APK, AAB,
+  IPA, Windows installer, Linux package or macOS DMG.
+- **Device-calendar integration:** native-only development code is retained,
+  but the web release does not claim verified calendar linking.
+- **Offline initial website loading:** local storage is not proof of an
+  installed PWA or guaranteed offline page loading.
 - Other prototype, analytics, templating and developer screens may evolve
   independently of the first supported release surface.
 
@@ -76,7 +76,7 @@ protected-main review are required before a stable GitHub release.
 
 Review the [first stable release gate](docs/FIRST_STABLE_RELEASE_GATE.md),
 [dependency audit](docs/SECURITY_AUDIT_FIRST_STABLE.md), and
-[Android device verification record](docs/ANDROID_STABLE_CANDIDATE_TEST_RECORD.md)
+[web browser QA template](docs/WEB_STABLE_CANDIDATE_TEST_RECORD.md)
 for exact source commits, missing approvals, verified artifacts and manual QA.
 Historical feature reports elsewhere in this repository are development notes
 and **must not be read as proof that every advertised feature ships**.
@@ -293,7 +293,7 @@ To install and run MeTodo locally, follow these steps:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/SanskarYadav/MeTodo.git
+    git clone https://github.com/sanskarIN/MeTodo.git
     cd MeTodo
     ```
 
@@ -313,8 +313,9 @@ To install and run MeTodo locally, follow these steps:
     This will start both the Metro bundler for the Expo app and the Node.js backend server.
 
 5.  **Open the app:**
-    -   **iOS/Android:** Scan the QR code displayed in your terminal with the Expo Go app.
-    -   **Web:** Open your browser to the URL provided in the terminal (usually `http://localhost:8081`).
+    -   **Web development:** Open the browser URL provided in the terminal (usually `http://localhost:8081`).
+    -   **Production web export:** `pnpm exec expo export --platform web --output-dir dist/web`; serve `dist/web` using an HTTP(S) static host to test the actual export.
+    -   **Native platforms:** Android and iOS are development targets only, not published v1.0.0 distributions.
 
 ## Getting Started
 

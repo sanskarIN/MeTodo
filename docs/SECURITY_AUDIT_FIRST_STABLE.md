@@ -40,6 +40,7 @@ Three moderate and one low advisories remained in the test candidate.
 Review each before stable release; these figures are advisory counts, not
 a guarantee that every runtime path is risk-free.
 
-An audit passing does **not** replace authenticated feature review, Android
-signing, real-device smoke tests, privacy review, protected-branch approval,
-or final human release approval.
+An audit passing does **not** replace real-browser QA of the exact web
+candidate, privacy review, protected-branch approval or final human release
+approval. Android signing and physical Android testing are deferred from the
+web-only v1.0.0 scope.
