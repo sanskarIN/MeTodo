@@ -9,6 +9,10 @@ describe("Windows blank-screen diagnostics", () => {
     expect(bootstrap).toContain("Any known screen content");
     expect(bootstrap).toContain("External CSS loaded");
     expect(bootstrap).toContain("Home ancestors:");
+    expect(bootstrap).toContain("Home paint check:");
+    expect(bootstrap).toContain("Foreground token");
+    expect(bootstrap).toContain("effective opacity");
+    expect(bootstrap).toContain("elementFromPoint");
     expect(bootstrap).toContain("showPanel(!hasContent())");
     expect(bootstrap).toContain("Reload UI (keeps tasks)");
     expect(exporter).toContain('metodo-desktop-diagnostic');

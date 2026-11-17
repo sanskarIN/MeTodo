@@ -45,7 +45,14 @@
       " display=" + style.display +
       " flex=" + style.flex +
       " overflow=" + style.overflow +
-      " visibility=" + style.visibility;
+      " visibility=" + style.visibility +
+      " opacity=" + style.opacity +
+      " color=" + style.color +
+      " bg=" + style.backgroundColor +
+      " z=" + style.zIndex +
+      " position=" + style.position +
+      " transform=" + style.transform +
+      " filter=" + style.filter;
   }
   function fixedAnchor(label) {
     var nodes = document.querySelectorAll("h1,h2,h3,p,span,div");
@@ -57,10 +64,35 @@
   }
   function parentGeometry(node) {
     var lines = [];
-    for (var i = 0; node && i < 5; i++, node = node.parentElement) {
+    for (var i = 0; node && i < 8; i++, node = node.parentElement) {
       lines.push("  " + node.tagName.toLowerCase() + "[" + i + "]: " + geom(node));
     }
     return lines.join("\n");
+  }
+  function stackingEvidence(node) {
+    if (!node) return "no known Home heading";
+    var alpha = 1;
+    var current = node;
+    var transparentAncestor = "none";
+    for (var i = 0; current && i < 14; i++, current = current.parentElement) {
+      var a = Number(window.getComputedStyle(current).opacity);
+      if (isFinite(a)) alpha *= a;
+      if (a === 0 && transparentAncestor === "none") {
+        transparentAncestor = current.tagName.toLowerCase() + "[" + i + "]";
+      }
+    }
+    var r = node.getBoundingClientRect();
+    var topElement = document.elementFromPoint(
+      Math.max(0, Math.min(innerWidth - 1, r.left + 3)),
+      Math.max(0, Math.min(innerHeight - 1, r.top + r.height / 2))
+    );
+    var relationship = topElement === node ? "heading" :
+      (topElement && node.contains(topElement)) ? "heading descendant" :
+      (topElement && topElement.contains(node)) ? "ancestor" : "possibly overlaid";
+    return "effective opacity=" + alpha.toFixed(3) +
+      " zero-opacity ancestor=" + transparentAncestor +
+      " hit-test=" + relationship +
+      " top-tag=" + (topElement ? topElement.tagName.toLowerCase() : "none");
   }
   function report() {
     var root = document.getElementById("root");
@@ -80,11 +112,15 @@
       "Root child: " + geom(inner),
       "Root grandchildren: " + (inner ? inner.childElementCount : 0),
       "Native stylesheets: " + document.styleSheets.length,
+      "Theme: " + (document.documentElement.dataset.theme || "unset"),
+      "Foreground token: " + window.getComputedStyle(document.documentElement).getPropertyValue("--color-foreground").trim(),
+      "Background token: " + window.getComputedStyle(document.documentElement).getPropertyValue("--color-background").trim(),
       "External CSS loaded: " + readyCss + "/" + css.length,
       "External JS tags: " + document.querySelectorAll("script[src]").length,
       "Home content found: " + Boolean(header),
       "Home heading: " + geom(header),
       "Home ancestors:\n" + parentGeometry(header),
+      "Home paint check: " + stackingEvidence(header),
       "Loading indicator: " + geom(loading),
       "Home tab: " + geom(tabs),
       "Any known screen content: " + hasContent(),
