@@ -13,6 +13,7 @@ on:
       - "scripts/windows-diagnostic-bootstrap.js"
       - "scripts/prepare-windows-export.mjs"
       - "scripts/windows-native-webview2-smoke.mjs"
+      - "scripts/windows-native-uia-probe.ps1"
       - "tests/windows-viewport-layout.test.ts"
       - "tests/windows-diagnostic-export.test.ts"
       - "tests/windows-native-runtime-smoke.test.ts"
@@ -105,13 +106,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build native Windows installer with offline WebView2 runtime
+        id: build_native
         shell: pwsh
         run: |
           pnpm desktop:windows:build
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Probe compiled Tauri WebView2 runtime (advisory)
-        continue-on-error: true
+      - name: Probe compiled Tauri WebView2 runtime (required for green Windows CI)
         shell: pwsh
         run: |
           node scripts/windows-native-webview2-smoke.mjs
@@ -129,6 +130,8 @@ jobs:
           }
 
       - name: Require actual Windows installer and write checksums
+        id: checksums
+        if: ${{ always() && steps.build_native.outcome == 'success' }}
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -154,6 +157,7 @@ jobs:
           }
 
       - name: Upload trial installer without publishing
+        if: ${{ always() && steps.checksums.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: metodo-windows-native-trial

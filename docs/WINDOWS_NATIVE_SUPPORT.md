@@ -69,3 +69,9 @@ The CI step now creates a `NOT VERIFIED` report if the native probe stops before
 ## Native probe defect found in build fdec73a5ae3b (2026-11-17)
 
 The actual attached artifact for the correctly stamped source revision included a `NATIVE_WEBVIEW2_SMOKE.txt` report reporting **NOT VERIFIED**, with `The "paths[2]" argument must be of type string. Received an instance of Array`. This was caused by `array.map(resolve)`: JavaScript's `Array.map` passes index and the original array to Node's `path.resolve`, causing it to reject the array. The native probe is corrected to explicitly invoke `resolve(candidate)` and has a regression test. This is a CI test harness bug; it does not imply that the installed blank-screen issue has been cured. Only a new native probe result and Windows 11 user QA can validate that.
+
+## Native runtime CI WebView2 debugging restriction (2026-11-17)
+
+The exact-commit Windows trial in run 44068827788 compiled, but its native probe returned NOT VERIFIED: No inspectable WebView2 page in the Windows CI session. WebView2 150+ on elevated Windows runners can ignore environment-provided CDP debugging ports (MicrosoftEdge/WebView2Feedback#5645). Do not weaken system policies or enable production debugging to bypass this safeguard.
+
+The native CI probe now attempts a read-only Windows UI Automation accessibility check on the launched local process if CDP cannot attach. It looks for the MeTodo window and its visible Home heading, without examining task content. If neither method verifies the visible heading, the Windows workflow reports failure but still uploads the checksum-verified unsigned diagnostic installer when compilation succeeded. A successful workflow never substitutes for a full installed Windows 11 functional acceptance test.

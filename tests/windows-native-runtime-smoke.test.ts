@@ -33,6 +33,22 @@ describe("Windows native runtime verification", () => {
     expect(exporter).toContain("process.env.METODO_SOURCE_SHA");
     expect(exporter).toContain("Windows trial source revision differs from checked-out code");
   });
+  it("falls back to Windows accessibility without reading private task data", () => {
+    const uia = readFileSync("scripts/windows-native-uia-probe.ps1", "utf8");
+    expect(probe).toContain("windows-native-uia-probe.ps1");
+    expect(probe).toContain("PASS (Windows UI Automation fallback)");
+    expect(uia).toContain("System.Windows.Automation.AutomationElement");
+    expect(uia).toContain("Stay productive");
+    expect(uia).toContain("homeHeaderVisible");
+    expect(uia).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|Get-Content/);
+  });
+  it("keeps diagnostics downloadable even when native verification fails", () => {
+    expect(workflow).not.toContain("continue-on-error: true");
+    expect(workflow).toContain("always() && steps.build_native.outcome == 'success'");
+    expect(workflow).toContain("always() && steps.checksums.outcome == 'success'");
+    expect(workflow).toContain("NATIVE_WEBVIEW2_SMOKE.txt");
+  });
+
   it("is syntactically valid in Node", () => {
     expect(() => execFileSync(process.execPath, ["--check", "scripts/windows-native-webview2-smoke.mjs"])).not.toThrow();
   });

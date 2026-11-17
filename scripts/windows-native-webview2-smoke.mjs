@@ -4,7 +4,7 @@
  * Uses a localhost-only DevTools port on the ephemeral CI runner.
  * Never reads or uploads local task data.
  */
-import { spawn, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -111,11 +111,29 @@ try {
   console.log(report);
   if (!pass) process.exitCode = 1;
 } catch (error) {
-  const report = "Native Windows WebView2 test: NOT VERIFIED\n" +
-    String(error?.message || error) + "\n";
+  let uia = { method: "Windows UI Automation", status: "NOT VERIFIED", reason: "not_run" };
+  if (child?.pid && child.exitCode === null) {
+    try {
+      const json = execFileSync("powershell.exe", [
+        "-NoProfile", "-NonInteractive",
+        "-File", resolve("scripts/windows-native-uia-probe.ps1"),
+        "-TargetProcessId", String(child.pid),
+      ], { encoding: "utf8", windowsHide: true, timeout: 30000 }).trim();
+      uia = JSON.parse(json);
+    } catch {
+      uia = { method: "Windows UI Automation", status: "NOT VERIFIED",
+        reason: "uia_probe_unavailable" };
+    }
+  }
+  const passed = uia?.status === "PASS" && uia?.windowFound === true &&
+    uia?.homeHeaderVisible === true;
+  const report = "Native Windows WebView2 test: " +
+    (passed ? "PASS (Windows UI Automation fallback)" : "NOT VERIFIED") + "\n" +
+    "CDP: " + String(error?.message || error) + "\n" +
+    "UIA: " + JSON.stringify(uia) + "\n";
   writeFileSync(output, report, "utf8");
-  console.error(report);
-  process.exitCode = 1;
+  if (passed) console.log(report);
+  else { console.error(report); process.exitCode = 1; }
 } finally {
   if (ws) ws.close();
   if (child?.pid) spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true });
