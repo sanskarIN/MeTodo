@@ -6,7 +6,10 @@ describe("Windows blank-screen diagnostics", () => {
   const exporter = readFileSync("scripts/prepare-windows-export.mjs", "utf8");
   it("contains a build marker and a failure panel", () => {
     expect(bootstrap).toContain("data-metodo-build-badge");
-    expect(bootstrap).toContain("Screen content visible");
+    expect(bootstrap).toContain("Any known screen content");
+    expect(bootstrap).toContain("External CSS loaded");
+    expect(bootstrap).toContain("Home ancestors:");
+    expect(bootstrap).toContain("showPanel(!hasContent())");
     expect(bootstrap).toContain("Reload UI (keeps tasks)");
     expect(exporter).toContain('metodo-desktop-diagnostic');
     expect(exporter).toContain("listHtml(destination)");

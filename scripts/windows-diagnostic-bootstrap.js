@@ -7,7 +7,7 @@
   var panel = null;
   var badge = null;
   document.documentElement.setAttribute("data-metodo-windows-trial", revision);
-  window.addEventListener("error", function () { errors++; });
+  window.addEventListener("error", function () { errors++; }, true);
   window.addEventListener("unhandledrejection", function () { rejections++; });
 
   function isVisible(el) {
@@ -36,18 +36,60 @@
     }
     return false;
   }
+  function geom(el) {
+    if (!el) return "absent";
+    var r = el.getBoundingClientRect();
+    var style = window.getComputedStyle(el);
+    return "xy=" + Math.round(r.left) + "," + Math.round(r.top) +
+      " wh=" + Math.round(r.width) + "x" + Math.round(r.height) +
+      " display=" + style.display +
+      " flex=" + style.flex +
+      " overflow=" + style.overflow +
+      " visibility=" + style.visibility;
+  }
+  function fixedAnchor(label) {
+    var nodes = document.querySelectorAll("h1,h2,h3,p,span,div");
+    for (var i = 0; i < nodes.length; i++) {
+      if (!nodes[i].childElementCount &&
+          (nodes[i].textContent || "").trim() === label) return nodes[i];
+    }
+    return null;
+  }
+  function parentGeometry(node) {
+    var lines = [];
+    for (var i = 0; node && i < 5; i++, node = node.parentElement) {
+      lines.push("  " + node.tagName.toLowerCase() + "[" + i + "]: " + geom(node));
+    }
+    return lines.join("\n");
+  }
   function report() {
     var root = document.getElementById("root");
-    var rect = root && root.getBoundingClientRect();
+    var css = document.querySelectorAll('link[rel="stylesheet"]');
+    var readyCss = 0;
+    for (var i = 0; i < css.length; i++) if (css[i].sheet) readyCss++;
+    var header = fixedAnchor("Stay productive");
+    var loading = fixedAnchor("Loading your local tasks…");
+    var tabs = fixedAnchor("Home");
+    var inner = root && root.firstElementChild;
     return [
       "Build: " + revision,
       "Viewport: " + innerWidth + " x " + innerHeight,
-      "Root present: " + Boolean(root),
-      "Root size: " + (rect ? Math.round(rect.width) + " x " + Math.round(rect.height) : "absent"),
-      "Document ready: " + document.readyState,
-      "Screen content visible: " + hasContent(),
-      "Script error count: " + errors,
-      "Rejected promise count: " + rejections
+      "Ready: " + document.readyState,
+      "Body: " + geom(document.body),
+      "Root: " + geom(root),
+      "Root child: " + geom(inner),
+      "Root grandchildren: " + (inner ? inner.childElementCount : 0),
+      "Native stylesheets: " + document.styleSheets.length,
+      "External CSS loaded: " + readyCss + "/" + css.length,
+      "External JS tags: " + document.querySelectorAll("script[src]").length,
+      "Home content found: " + Boolean(header),
+      "Home heading: " + geom(header),
+      "Home ancestors:\n" + parentGeometry(header),
+      "Loading indicator: " + geom(loading),
+      "Home tab: " + geom(tabs),
+      "Any known screen content: " + hasContent(),
+      "Resource or JS errors: " + errors,
+      "Unhandled promises: " + rejections
     ].join("\n");
   }
   function button(text, click) {
@@ -95,7 +137,10 @@
   }
   function check() {
     mount();
-    if (!hasContent()) showPanel(true);
+    // This is a Windows-only unsigned diagnostic build. Show the technical
+    // state even if a DOM bounding rect incorrectly claims content is visible
+    // while an ancestor clips or overlays the screen.
+    showPanel(!hasContent());
   }
   function start() {
     mount();
