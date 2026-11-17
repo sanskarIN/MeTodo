@@ -21,6 +21,13 @@ describe("MeTodo Windows builds a native installer rather than a web-only bundle
     expect(lock).toContain('name = "metodo-desktop"');
   });
 
+  it("uses a compact, resizable Windows startup window that fits 768p desktops", () => {
+    expect(config.app.windows[0].height).toBeLessThanOrEqual(680);
+    expect(config.app.windows[0].width).toBeLessThanOrEqual(1024);
+    expect(config.app.windows[0].resizable).toBe(true);
+    expect(config.app.windows[0].minHeight).toBeLessThanOrEqual(560);
+  });
+
   it("exports web then generates brand icons before invoking the native compiler", () => {
     expect(pkg.scripts["desktop:windows:export"]).toContain("expo export --platform web");
     expect(pkg.scripts["desktop:windows:icon"]).toContain("assets/images/icon.png");

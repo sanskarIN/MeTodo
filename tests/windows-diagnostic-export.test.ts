@@ -6,7 +6,26 @@ describe("Windows blank-screen diagnostics", () => {
   const exporter = readFileSync("scripts/prepare-windows-export.mjs", "utf8");
   it("contains a build marker and a failure panel", () => {
     expect(bootstrap).toContain("data-metodo-build-badge");
-    expect(bootstrap).toContain("Screen content visible");
+    expect(bootstrap).toContain("Any known screen content");
+    expect(bootstrap).toContain("External CSS loaded");
+    expect(bootstrap).toContain("Home ancestors:");
+    expect(bootstrap).toContain("Home paint check:");
+    expect(bootstrap).toContain("Foreground token");
+    expect(bootstrap).toContain("effective opacity");
+    expect(bootstrap).toContain("elementFromPoint");
+    expect(bootstrap).toContain("METODO-PAINT ");
+    expect(bootstrap).toContain("data-metodo-paint-summary");
+    expect(bootstrap).toContain("alpha.toFixed(3)");
+    expect(bootstrap).toContain("METODO-LAYER ");
+    expect(bootstrap).toContain("METODO-SCENE ");
+    expect(bootstrap).toContain("data-metodo-repaired-scene");
+    expect(bootstrap).toContain('node.style.setProperty("min-height"');
+    expect(bootstrap).toContain("METODO-CHAIN ");
+    expect(bootstrap).toContain("nodes.reverse()");
+    expect(bootstrap).toContain("nearest positive ancestor");
+    expect(bootstrap).toContain("data-metodo-layer-summary");
+    expect(bootstrap).toContain("webkitTextFillColor");
+    expect(bootstrap).toContain("showPanel(!hasContent())");
     expect(bootstrap).toContain("Reload UI (keeps tasks)");
     expect(exporter).toContain('metodo-desktop-diagnostic');
     expect(exporter).toContain("listHtml(destination)");

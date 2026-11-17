@@ -12,8 +12,11 @@ on:
       - "scripts/windows-web-smoke.mjs"
       - "scripts/windows-diagnostic-bootstrap.js"
       - "scripts/prepare-windows-export.mjs"
+      - "scripts/windows-native-webview2-smoke.mjs"
+      - "scripts/windows-native-uia-probe.ps1"
       - "tests/windows-viewport-layout.test.ts"
       - "tests/windows-diagnostic-export.test.ts"
+      - "tests/windows-native-runtime-smoke.test.ts"
       - "assets/images/icon.png"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -35,9 +38,21 @@ jobs:
     timeout-minutes: 120
     env:
       CARGO_TERM_COLOR: always
+      METODO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Ensure source provenance matches exact PR head
+        shell: pwsh
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:METODO_SOURCE_SHA) {
+            throw "Ref mismatch: checked out $actual instead of intended $env:METODO_SOURCE_SHA"
+          }
+          "Trial source SHA: $actual" | Out-File $env:GITHUB_STEP_SUMMARY -Append
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -91,12 +106,32 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build native Windows installer with offline WebView2 runtime
+        id: build_native
         shell: pwsh
         run: |
           pnpm desktop:windows:build
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Probe compiled Tauri WebView2 runtime (required for green Windows CI)
+        shell: pwsh
+        run: |
+          node scripts/windows-native-webview2-smoke.mjs
+          $probeExit = $LASTEXITCODE
+          $report = "dist/windows-native/NATIVE_WEBVIEW2_SMOKE.txt"
+          if (-not (Test-Path $report)) {
+            New-Item -ItemType Directory -Force "dist/windows-native" | Out-Null
+            "Native Windows WebView2 test: NOT VERIFIED`nProbe terminated before writing diagnostics. Exit code: $probeExit" |
+              Set-Content -LiteralPath $report -Encoding utf8
+          }
+          Get-Content -LiteralPath $report | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          if ($probeExit -ne 0) {
+            Write-Warning "Native renderer runtime not proven; see NATIVE_WEBVIEW2_SMOKE.txt."
+            exit $probeExit
+          }
+
       - name: Require actual Windows installer and write checksums
+        id: checksums
+        if: ${{ always() && steps.build_native.outcome == 'success' }}
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -106,7 +141,7 @@ jobs:
           }
           New-Item -ItemType Directory -Force "dist/windows-native" | Out-Null
           $version = node -p "require('./package.json').version"
-          $revision = $env:GITHUB_SHA.Substring(0, 12)
+          $revision = $env:METODO_SOURCE_SHA.Substring(0, 12)
           $destination = "dist/windows-native/MeTodo-v$version-windows-x64-trial-$revision-setup.exe"
           Copy-Item -LiteralPath $installers[0].FullName -Destination $destination
           if ((Get-Item $destination).Length -lt 1024) { throw "Installer is unexpectedly small" }
@@ -122,11 +157,14 @@ jobs:
           }
 
       - name: Upload trial installer without publishing
+        if: ${{ always() && steps.checksums.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: metodo-windows-native-trial
           path: |
             dist/windows-native/MeTodo-v*-windows-x64-trial-*-setup.exe
             dist/windows-native/SHA256SUMS
+            dist/windows-native/NATIVE_WEBVIEW2_SMOKE.txt
+            dist/windows-native/WINDOWS_TRIAL_RENDER.png
           if-no-files-found: error
           retention-days: 14
