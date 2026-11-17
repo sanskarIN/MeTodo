@@ -11,6 +11,15 @@ describe("Windows native runtime verification", () => {
     expect(probe).toContain("headerVisible");
     expect(workflow).toContain("node scripts/windows-native-webview2-smoke.mjs");
   });
+  it("resolves executable paths without passing Array.map callback metadata to path.resolve", () => {
+    // Array.map passes (value, index, array): forwarding all three to
+    // node:path.resolve throws because the third argument is an array.
+    expect(probe).toContain(".map(candidate => resolve(candidate))");
+    expect(probe).not.toContain(".map(resolve)");
+    const candidates = ["src-tauri/target/release/metodo-desktop.exe", "src-tauri/target/release/MeTodo.exe"];
+    expect(candidates.map(candidate => candidate.length)).toHaveLength(2);
+  });
+
   it("does not access task data or storage in the probe", () => {
     expect(probe).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|metodo_settings/);
     expect(probe).not.toMatch(/window\.localStorage|sessionStorage|sendBeacon/);

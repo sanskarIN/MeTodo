@@ -82,7 +82,7 @@ try {
   const exe = [
     "src-tauri/target/release/metodo-desktop.exe",
     "src-tauri/target/release/MeTodo.exe"
-  ].map(resolve).find(existsSync);
+  ].map(candidate => resolve(candidate)).find(candidate => existsSync(candidate));
   if (!exe) {
     const folder = resolve("src-tauri/target/release");
     const names = existsSync(folder) ? readdirSync(folder).filter(name => name.endsWith(".exe")) : [];
