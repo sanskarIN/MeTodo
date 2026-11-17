@@ -11,6 +11,7 @@ $r=@{
   homeTabFound=$false; tasksTabFound=$false; settingsTabFound=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
+  sceneSummary="unavailable"
 }
 try {
   Add-Type -AssemblyName UIAutomationClient
@@ -72,13 +73,17 @@ try {
         }
         if($candidate -and $candidate.StartsWith("METODO-LAYER ")) {
           $r.layerSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,300))
+          continue
+        }
+        if($candidate -and $candidate.StartsWith("METODO-SCENE ")) {
+          $r.sceneSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,200))
         }
       }
 
       # CI runner uses a fresh empty profile. Capture only its native test window
       # when content is not verified; never capture a developer's existing tasks.
       if($ScreenshotPath -and $env:GITHUB_ACTIONS -eq "true" -and
-         $r.windowFound -and -not $r.homeHeaderVisible) {
+         $r.windowFound) {
         try {
           Add-Type -AssemblyName System.Drawing
           $captureWidth=[Math]::Min([int]$bounds.Width,1400)

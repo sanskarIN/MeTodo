@@ -6,6 +6,9 @@
   var rejections = 0;
   var panel = null;
   var badge = null;
+  var sceneRepairs = 0;
+  var sceneBefore = "not_checked";
+  var sceneAfter = "not_checked";
   document.documentElement.setAttribute("data-metodo-windows-trial", revision);
   window.addEventListener("error", function () { errors++; }, true);
   window.addEventListener("unhandledrejection", function () { rejections++; });
@@ -168,6 +171,52 @@
       " pointerlessBg=" + ignoredPointerPaint + " otherBg=" + otherPaint;
   }
 
+
+  // EXPERIMENTAL WINDOWS-ONLY FIX: native WebView2 laid out the Home heading
+  // but a navigation ancestor measured 0px tall and clipped the entire scene.
+  // Repair only that specific collapsed ancestor of a known static heading.
+  // No task titles, storage, network data or permissions are touched.
+  function repairCollapsedScene() {
+    var header = fixedAnchor("Stay productive");
+    if (!header) return;
+    var firstZero = null;
+    var newHeight = 0;
+    for (var pass = 0; pass < 3; pass++) {
+      var current = header.parentElement;
+      var found = false;
+      for (var depth = 0; current && depth < 14; depth++, current = current.parentElement) {
+        var rect = current.getBoundingClientRect();
+        var parent = current.parentElement;
+        if (!parent) continue;
+        var parentRect = parent.getBoundingClientRect();
+        var computed = window.getComputedStyle(current);
+        var hiddenOverflow = computed.overflowY === "hidden" ||
+          computed.overflowY === "clip" || computed.overflow === "hidden" ||
+          computed.overflow === "clip";
+        // Ignore zero-sized controls and hidden inactive routes. Only the
+        // large, clipped ancestor of the visible Home route is eligible.
+        if (!hiddenOverflow || rect.height > 1 || rect.width < 250 ||
+            parentRect.height < 250 || rect.width > innerWidth + 10) continue;
+        if (!firstZero) firstZero = Math.round(rect.width) + "x" + Math.round(rect.height);
+        var size = Math.floor(Math.min(parentRect.height, innerHeight));
+        if (size < 250) continue;
+        current.style.setProperty("min-height", size + "px", "important");
+        current.style.setProperty("height", size + "px", "important");
+        current.setAttribute("data-metodo-repaired-scene", "true");
+        sceneRepairs++;
+        newHeight = Math.round(current.getBoundingClientRect().height);
+        found = true;
+        break;
+      }
+      if (!found) break;
+    }
+    if (firstZero) sceneBefore = firstZero;
+    sceneAfter = String(newHeight || "no_change");
+  }
+  function sceneSummary() {
+    return "METODO-SCENE repairs=" + sceneRepairs +
+      " before=" + sceneBefore + " after=" + sceneAfter;
+  }
   function report() {
     var root = document.getElementById("root");
     var css = document.querySelectorAll('link[rel="stylesheet"]');
@@ -195,6 +244,7 @@
       "Home heading: " + geom(header),
       "Home ancestors:\n" + parentGeometry(header),
       "Home paint check: " + stackingEvidence(header),
+      "Scene repair trial: " + sceneSummary(),
       "Loading indicator: " + geom(loading),
       "Home tab: " + geom(tabs),
       "Any known screen content: " + hasContent(),
@@ -236,6 +286,10 @@
       layerButton.setAttribute("data-metodo-layer-summary", "true");
       layerButton.style.cssText += "display:block;white-space:normal;text-align:left;word-break:break-word;";
       panel.appendChild(layerButton);
+      var sceneButton = button("METODO-SCENE pending", function () { showPanel(false); });
+      sceneButton.setAttribute("data-metodo-scene-summary", "true");
+      sceneButton.style.cssText += "display:block;white-space:normal;text-align:left;word-break:break-word;";
+      panel.appendChild(sceneButton);
       panel.appendChild(button("Reload UI (keeps tasks)", function () { location.reload(); }));
       panel.appendChild(button("Close", function () { panel.remove(); panel = null; }));
       document.body.appendChild(panel);
@@ -246,6 +300,7 @@
     panel.querySelector("[data-metodo-report]").textContent = report();
     panel.querySelector("[data-metodo-paint-summary]").textContent = paintSummary();
     panel.querySelector("[data-metodo-layer-summary]").textContent = layerSummary();
+    panel.querySelector("[data-metodo-scene-summary]").textContent = sceneSummary();
   }
   function mount() {
     if (!document.body) return;
@@ -258,6 +313,7 @@
   }
   function check() {
     mount();
+    repairCollapsedScene();
     // This is a Windows-only unsigned diagnostic build. Show the technical
     // state even if a DOM bounding rect incorrectly claims content is visible
     // while an ancestor clips or overlays the screen.
@@ -265,8 +321,12 @@
   }
   function start() {
     mount();
+    setTimeout(check, 3000);
     setTimeout(check, 10000);
     setTimeout(check, 18000);
+    // A React route replacement can re-create the collapsed native scene.
+    // Repeat this limited experiment only during the trial startup minute.
+    for (var t = 25000; t <= 55000; t += 10000) setTimeout(check, t);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
   else start();

@@ -17,6 +17,10 @@ describe("Windows blank-screen diagnostics", () => {
     expect(bootstrap).toContain("data-metodo-paint-summary");
     expect(bootstrap).toContain("alpha.toFixed(3)");
     expect(bootstrap).toContain("METODO-LAYER ");
+    expect(bootstrap).toContain("METODO-SCENE ");
+    expect(bootstrap).toContain("data-metodo-repaired-scene");
+    expect(bootstrap).toContain('current.style.setProperty("min-height"');
+    expect(bootstrap).toContain("parentRect.height < 250");
     expect(bootstrap).toContain("data-metodo-layer-summary");
     expect(bootstrap).toContain("webkitTextFillColor");
     expect(bootstrap).toContain("showPanel(!hasContent())");
