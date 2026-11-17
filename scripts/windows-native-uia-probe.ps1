@@ -9,6 +9,8 @@ $r=@{
   method="Windows UI Automation"; status="NOT VERIFIED"
   windowFound=$false; homeHeaderVisible=$false
   homeTabFound=$false; tasksTabFound=$false; settingsTabFound=$false
+  tasksTabVisible=$false; settingsTabVisible=$false; desktopWorkAreaBottom=0
+  tasksTabBottom=0; settingsTabBottom=0
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
   sceneSummary="unavailable"
@@ -40,14 +42,37 @@ try {
         [System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new(
           [System.Windows.Automation.AutomationElement]::NameProperty,"Home")))
-      $r.tasksTabFound=($null -ne $w.FindFirst(
+      $tasksElement=$w.FindFirst(
         [System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new(
-          [System.Windows.Automation.AutomationElement]::NameProperty,"Tasks")))
-      $r.settingsTabFound=($null -ne $w.FindFirst(
+          [System.Windows.Automation.AutomationElement]::NameProperty,"Tasks"))
+      $settingsElement=$w.FindFirst(
         [System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new(
-          [System.Windows.Automation.AutomationElement]::NameProperty,"Settings")))
+          [System.Windows.Automation.AutomationElement]::NameProperty,"Settings"))
+      $r.tasksTabFound=($null -ne $tasksElement)
+      $r.settingsTabFound=($null -ne $settingsElement)
+      Add-Type -AssemblyName System.Windows.Forms
+      $workArea=[System.Windows.Forms.Screen]::FromHandle($hwnd).WorkingArea
+      $r.desktopWorkAreaBottom=[int]$workArea.Bottom
+      if($null -ne $tasksElement) {
+        $tasksBounds=$tasksElement.Current.BoundingRectangle
+        $r.tasksTabBottom=[int]$tasksBounds.Bottom
+        $r.tasksTabVisible=($tasksBounds.Width -ge 15 -and
+          $tasksBounds.Height -ge 8 -and
+          $tasksBounds.Top -ge $workArea.Top -and
+          $tasksBounds.Bottom -le $workArea.Bottom -and
+          -not $tasksElement.Current.IsOffscreen)
+      }
+      if($null -ne $settingsElement) {
+        $settingsBounds=$settingsElement.Current.BoundingRectangle
+        $r.settingsTabBottom=[int]$settingsBounds.Bottom
+        $r.settingsTabVisible=($settingsBounds.Width -ge 15 -and
+          $settingsBounds.Height -ge 8 -and
+          $settingsBounds.Top -ge $workArea.Top -and
+          $settingsBounds.Bottom -le $workArea.Bottom -and
+          -not $settingsElement.Current.IsOffscreen)
+      }
       $r.documentControlPresent=($null -ne $w.FindFirst(
         [System.Windows.Automation.TreeScope]::Descendants,
         [System.Windows.Automation.PropertyCondition]::new(
@@ -107,9 +132,12 @@ try {
           $r.snapshot="capture_unavailable"
         }
       }
-      if($r.windowFound -and $r.homeHeaderVisible) {
+      if($r.windowFound -and $r.homeHeaderVisible -and
+         $r.tasksTabVisible -and $r.settingsTabVisible) {
         $r.status="PASS"
-        $r.reason="native_home_header_visible"
+        $r.reason="native_home_and_tabs_visible"
+      } elseif($r.windowFound -and $r.homeHeaderVisible) {
+        $r.reason="home_visible_but_tabs_outside_work_area"
       } elseif($r.windowFound) {
         $r.reason="home_header_not_exposed_or_invisible"
       } else {
