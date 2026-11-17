@@ -42,7 +42,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeProvider as CustomThemeProvider } from "@/lib/theme-provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { TaskProvider } from "@/lib/task-context";
-import { isWindowsDesktopRuntime } from "@/lib/windows-desktop";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -72,7 +71,7 @@ export default function RootLayout() {
       <CustomThemeProvider>
         <TaskProvider>
           <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-            <Stack screenOptions={isWindowsDesktopRuntime() ? { animation: "none" } : undefined}>
+            <Stack>
               <Stack.Screen
                 name="(tabs)"
                 options={{

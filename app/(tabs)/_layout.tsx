@@ -37,7 +37,6 @@ import { Platform } from "react-native";
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { isWindowsDesktopRuntime } from "@/lib/windows-desktop";
 
 /**
  * TabLayout Component
@@ -64,7 +63,6 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         headerShown: false,
-        animation: isWindowsDesktopRuntime() ? "none" : undefined,
         tabBarButton: HapticTab,
         tabBarStyle: {
           paddingTop: 8,
