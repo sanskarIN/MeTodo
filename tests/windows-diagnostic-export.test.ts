@@ -19,7 +19,7 @@ describe("Windows blank-screen diagnostics", () => {
     expect(bootstrap).toContain("METODO-LAYER ");
     expect(bootstrap).toContain("METODO-SCENE ");
     expect(bootstrap).toContain("data-metodo-repaired-scene");
-    expect(bootstrap).toContain('current.style.setProperty("min-height"');
+    expect(bootstrap).toContain('node.style.setProperty("min-height"');
     expect(bootstrap).toContain("METODO-CHAIN ");
     expect(bootstrap).toContain("nodes.reverse()");
     expect(bootstrap).toContain("nearest positive ancestor");
