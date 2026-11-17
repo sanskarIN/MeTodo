@@ -165,5 +165,6 @@ jobs:
             dist/windows-native/MeTodo-v*-windows-x64-trial-*-setup.exe
             dist/windows-native/SHA256SUMS
             dist/windows-native/NATIVE_WEBVIEW2_SMOKE.txt
+            dist/windows-native/WINDOWS_TRIAL_RENDER.png
           if-no-files-found: error
           retention-days: 14

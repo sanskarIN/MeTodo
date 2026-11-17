@@ -114,11 +114,16 @@ try {
   let uia = { method: "Windows UI Automation", status: "NOT VERIFIED", reason: "not_run" };
   if (child?.pid && child.exitCode === null) {
     try {
-      const json = execFileSync("powershell.exe", [
+      const args = [
         "-NoProfile", "-NonInteractive",
         "-File", resolve("scripts/windows-native-uia-probe.ps1"),
         "-TargetProcessId", String(child.pid),
-      ], { encoding: "utf8", windowsHide: true, timeout: 30000 }).trim();
+      ];
+      if (process.env.GITHUB_ACTIONS === "true") {
+        args.push("-ScreenshotPath", resolve(folder, "WINDOWS_TRIAL_RENDER.png"));
+      }
+      const json = execFileSync("powershell.exe", args,
+        { encoding: "utf8", windowsHide: true, timeout: 30000 }).trim();
       uia = JSON.parse(json);
     } catch {
       uia = { method: "Windows UI Automation", status: "NOT VERIFIED",

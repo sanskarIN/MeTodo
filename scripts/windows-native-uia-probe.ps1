@@ -1,8 +1,17 @@
 # CI-only Windows UI Automation probe. Never reads user task content.
 [CmdletBinding()]
-param([Parameter(Mandatory=$true)][ValidateRange(1,2147483647)][int]$TargetProcessId)
+param(
+  [Parameter(Mandatory=$true)][ValidateRange(1,2147483647)][int]$TargetProcessId,
+  [string]$ScreenshotPath = ""
+)
 $ErrorActionPreference="Stop"
-$r=@{ method="Windows UI Automation"; status="NOT VERIFIED"; windowFound=$false; homeHeaderVisible=$false; reason="unknown" }
+$r=@{
+  method="Windows UI Automation"; status="NOT VERIFIED"
+  windowFound=$false; homeHeaderVisible=$false
+  homeTabFound=$false; tasksTabFound=$false; settingsTabFound=$false
+  documentControlPresent=$false; windowWidth=0; windowHeight=0
+  snapshot="not_requested"; reason="unknown"
+}
 try {
   Add-Type -AssemblyName UIAutomationClient
   Add-Type -AssemblyName UIAutomationTypes
@@ -23,12 +32,53 @@ try {
     } else {
       $bounds=$w.Current.BoundingRectangle
       $r.windowFound=($bounds.Width -ge 300 -and $bounds.Height -ge 200)
+      $r.windowWidth=[int]$bounds.Width
+      $r.windowHeight=[int]$bounds.Height
+      $r.homeTabFound=($null -ne $w.FindFirst(
+        [System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new(
+          [System.Windows.Automation.AutomationElement]::NameProperty,"Home")))
+      $r.tasksTabFound=($null -ne $w.FindFirst(
+        [System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new(
+          [System.Windows.Automation.AutomationElement]::NameProperty,"Tasks")))
+      $r.settingsTabFound=($null -ne $w.FindFirst(
+        [System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new(
+          [System.Windows.Automation.AutomationElement]::NameProperty,"Settings")))
+      $r.documentControlPresent=($null -ne $w.FindFirst(
+        [System.Windows.Automation.TreeScope]::Descendants,
+        [System.Windows.Automation.PropertyCondition]::new(
+          [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+          [System.Windows.Automation.ControlType]::Document)))
       $cond=[System.Windows.Automation.PropertyCondition]::new(
         [System.Windows.Automation.AutomationElement]::NameProperty, "Stay productive")
       $h=$w.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$cond)
       if($null -ne $h) {
         $rect=$h.Current.BoundingRectangle
         $r.homeHeaderVisible=($rect.Width -ge 20 -and $rect.Height -ge 8 -and -not $h.Current.IsOffscreen)
+      }
+      # CI runner uses a fresh empty profile. Capture only its native test window
+      # when content is not verified; never capture a developer's existing tasks.
+      if($ScreenshotPath -and $env:GITHUB_ACTIONS -eq "true" -and
+         $r.windowFound -and -not $r.homeHeaderVisible) {
+        try {
+          Add-Type -AssemblyName System.Drawing
+          $captureWidth=[Math]::Min([int]$bounds.Width,1400)
+          $captureHeight=[Math]::Min([int]$bounds.Height,1000)
+          $bitmap=[System.Drawing.Bitmap]::new($captureWidth,$captureHeight)
+          $graphics=[System.Drawing.Graphics]::FromImage($bitmap)
+          try {
+            $graphics.CopyFromScreen([int]$bounds.Left,[int]$bounds.Top,0,0,$bitmap.Size)
+            $bitmap.Save($ScreenshotPath,[System.Drawing.Imaging.ImageFormat]::Png)
+            $r.snapshot="saved_in_ephemeral_ci"
+          } finally {
+            $graphics.Dispose()
+            $bitmap.Dispose()
+          }
+        } catch {
+          $r.snapshot="capture_unavailable"
+        }
       }
       if($r.windowFound -and $r.homeHeaderVisible) {
         $r.status="PASS"
