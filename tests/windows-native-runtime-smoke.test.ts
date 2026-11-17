@@ -43,7 +43,7 @@ describe("Windows native runtime verification", () => {
     expect(uia).toContain("tasksTabVisible");
     expect(uia).toContain("settingsTabVisible");
     expect(uia).toContain("desktopWorkAreaBottom");
-    expect(uia).toContain("native_home_tabs_and_navigation_roundtrip_visible");
+    expect(uia).toContain("native_navigation_and_create_task_route_visible");
     expect(uia).toContain("navigationAttempted");
     expect(uia).toContain("tasksScreenVisible");
     expect(uia).toContain("settingsScreenVisible");
