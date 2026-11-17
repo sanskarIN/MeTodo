@@ -12,6 +12,7 @@ $r=@{
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
   sceneSummary="unavailable"
+  chainSummary="unavailable"
 }
 try {
   Add-Type -AssemblyName UIAutomationClient
@@ -76,7 +77,11 @@ try {
           continue
         }
         if($candidate -and $candidate.StartsWith("METODO-SCENE ")) {
-          $r.sceneSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,200))
+          $r.sceneSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,400))
+          continue
+        }
+        if($candidate -and $candidate.StartsWith("METODO-CHAIN ")) {
+          $r.chainSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,500))
         }
       }
 

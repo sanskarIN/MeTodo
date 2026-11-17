@@ -176,46 +176,75 @@
   // but a navigation ancestor measured 0px tall and clipped the entire scene.
   // Repair only that specific collapsed ancestor of a known static heading.
   // No task titles, storage, network data or permissions are touched.
+  // Diagnostics for only the static Home heading; never enumerate task text.
+  function layoutChain(header) {
+    if (!header) return "METODO-CHAIN missing";
+    var parts = [];
+    for (var n = header, i = 0; n && i < 17; n = n.parentElement, i++) {
+      var r = n.getBoundingClientRect();
+      var s = window.getComputedStyle(n);
+      var ov = (s.overflowY === "hidden" || s.overflowY === "clip") ? "C" : "-";
+      parts.push(i + ":" + Math.round(r.width) + "x" + Math.round(r.height) +
+        ov + (n.id === "root" ? "R" : ""));
+      if (n.id === "root") break;
+    }
+    return "METODO-CHAIN " + parts.join("|");
+  }
   function repairCollapsedScene() {
     var header = fixedAnchor("Stay productive");
-    if (!header) return;
-    var firstZero = null;
-    var newHeight = 0;
-    for (var pass = 0; pass < 3; pass++) {
-      var current = header.parentElement;
-      var found = false;
-      for (var depth = 0; current && depth < 14; depth++, current = current.parentElement) {
-        var rect = current.getBoundingClientRect();
-        var parent = current.parentElement;
-        if (!parent) continue;
-        var parentRect = parent.getBoundingClientRect();
-        var computed = window.getComputedStyle(current);
-        var hiddenOverflow = computed.overflowY === "hidden" ||
-          computed.overflowY === "clip" || computed.overflow === "hidden" ||
-          computed.overflow === "clip";
-        // Ignore zero-sized controls and hidden inactive routes. Only the
-        // large, clipped ancestor of the visible Home route is eligible.
-        if (!hiddenOverflow || rect.height > 1 || rect.width < 250 ||
-            parentRect.height < 250 || rect.width > innerWidth + 10) continue;
-        if (!firstZero) firstZero = Math.round(rect.width) + "x" + Math.round(rect.height);
-        var size = Math.floor(Math.min(parentRect.height, innerHeight));
-        if (size < 250) continue;
-        current.style.setProperty("min-height", size + "px", "important");
-        current.style.setProperty("height", size + "px", "important");
-        current.setAttribute("data-metodo-repaired-scene", "true");
-        sceneRepairs++;
-        newHeight = Math.round(current.getBoundingClientRect().height);
-        found = true;
-        break;
-      }
-      if (!found) break;
+    if (!header) {
+      sceneBefore = "heading_absent";
+      return;
     }
-    if (firstZero) sceneBefore = firstZero;
-    sceneAfter = String(newHeight || "no_change");
+    var nodes = [];
+    for (var el = header.parentElement, depth = 0;
+         el && depth < 18; el = el.parentElement, depth++) {
+      if (el.id === "root") break;
+      var bounds = el.getBoundingClientRect();
+      if (bounds.width >= 250 && bounds.width < innerWidth + 12) nodes.push(el);
+    }
+    // Previous native snapshots showed a zero-height, overflow:hidden
+    // wrapper even while the Home heading itself had nonzero dimensions.
+    var clipped = nodes.some(function (n) {
+      var r = n.getBoundingClientRect(), s = window.getComputedStyle(n);
+      return r.height <= 1 && (s.overflowY === "hidden" ||
+        s.overflowY === "clip" || s.overflow === "hidden");
+    });
+    if (!clipped) {
+      if (sceneBefore === "not_checked") sceneBefore = "no_clipped_ancestor";
+      if (sceneAfter === "not_checked") sceneAfter = "no_change";
+      return;
+    }
+    if (sceneBefore === "not_checked") sceneBefore = layoutChain(header).slice(0, 190);
+    var repairedThisCheck = 0;
+    // Restore the OUTERMOST collapsed wrapper first; its immediate parent
+    // can also be 0px tall, so require the nearest positive ancestor instead.
+    nodes.reverse().forEach(function (node) {
+      var r = node.getBoundingClientRect();
+      if (r.height > 1 || repairedThisCheck >= 6) return;
+      var parent = node.parentElement, available = 0;
+      for (var d = 0; parent && d < 12; d++, parent = parent.parentElement) {
+        var pr = parent.getBoundingClientRect();
+        if (pr.height >= 250 && pr.width >= 250) {
+          available = Math.floor(Math.min(pr.height, innerHeight));
+          break;
+        }
+      }
+      if (available < 250) return;
+      node.style.setProperty("min-height", available + "px", "important");
+      node.style.setProperty("height", available + "px", "important");
+      node.setAttribute("data-metodo-repaired-scene", "true");
+      sceneRepairs++;
+      repairedThisCheck++;
+    });
+    sceneAfter = layoutChain(header).slice(0, 190);
   }
   function sceneSummary() {
     return "METODO-SCENE repairs=" + sceneRepairs +
       " before=" + sceneBefore + " after=" + sceneAfter;
+  }
+  function chainSummary() {
+    return layoutChain(fixedAnchor("Stay productive"));
   }
   function report() {
     var root = document.getElementById("root");
@@ -290,6 +319,10 @@
       sceneButton.setAttribute("data-metodo-scene-summary", "true");
       sceneButton.style.cssText += "display:block;white-space:normal;text-align:left;word-break:break-word;";
       panel.appendChild(sceneButton);
+      var chainButton = button("METODO-CHAIN pending", function () { showPanel(false); });
+      chainButton.setAttribute("data-metodo-chain-summary", "true");
+      chainButton.style.cssText += "display:block;white-space:normal;text-align:left;word-break:break-word;";
+      panel.appendChild(chainButton);
       panel.appendChild(button("Reload UI (keeps tasks)", function () { location.reload(); }));
       panel.appendChild(button("Close", function () { panel.remove(); panel = null; }));
       document.body.appendChild(panel);
@@ -301,6 +334,7 @@
     panel.querySelector("[data-metodo-paint-summary]").textContent = paintSummary();
     panel.querySelector("[data-metodo-layer-summary]").textContent = layerSummary();
     panel.querySelector("[data-metodo-scene-summary]").textContent = sceneSummary();
+    panel.querySelector("[data-metodo-chain-summary]").textContent = chainSummary();
   }
   function mount() {
     if (!document.body) return;

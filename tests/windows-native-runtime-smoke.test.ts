@@ -41,6 +41,8 @@ describe("Windows native runtime verification", () => {
     expect(uia).toContain("Stay productive");
     expect(uia).toContain("homeHeaderVisible");
     expect(uia).toContain("sceneSummary");
+    expect(uia).toContain("chainSummary");
+    expect(uia).toContain("METODO-CHAIN ");
     expect(uia).toContain("METODO-SCENE ");
     expect(uia).toContain("homeTabFound");
     expect(uia).toContain("documentControlPresent");
