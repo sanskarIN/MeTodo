@@ -94,6 +94,39 @@
       " hit-test=" + relationship +
       " top-tag=" + (topElement ? topElement.tagName.toLowerCase() : "none");
   }
+  // Expose only fixed, non-personal paint metrics in an accessible button.
+  // Windows UI Automation can read this without a WebView2 debug port.
+  function paintSummary() {
+    var header = fixedAnchor("Stay productive");
+    if (!header) return "METODO-PAINT dom=0";
+    var style = window.getComputedStyle(header);
+    var rect = header.getBoundingClientRect();
+    var node = header;
+    var alpha = 1;
+    var hidden = "none";
+    for (var i = 0; node && i < 16; i++, node = node.parentElement) {
+      var currentStyle = window.getComputedStyle(node);
+      var a = Number(currentStyle.opacity);
+      if (isFinite(a)) alpha *= a;
+      if (hidden === "none" && (a === 0 || currentStyle.visibility === "hidden" ||
+        currentStyle.display === "none")) hidden = "ancestor" + i;
+    }
+    var hit = document.elementFromPoint(
+      Math.max(0, Math.min(innerWidth - 1, rect.left + 4)),
+      Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2))
+    );
+    var overlap = hit && (hit === header || header.contains(hit) || hit.contains(header))
+      ? "no" : "yes";
+    var color = style.color.replace(/[^a-zA-Z0-9(),. %]/g, "").slice(0, 55);
+    var background = window.getComputedStyle(document.body).backgroundColor
+      .replace(/[^a-zA-Z0-9(),. %]/g, "").slice(0, 55);
+    return "METODO-PAINT dom=1 fg=" + color + " bodyBg=" + background +
+      " alpha=" + alpha.toFixed(3) + " hidden=" + hidden +
+      " overlaid=" + overlap +
+      " rect=" + Math.round(rect.left) + "," + Math.round(rect.top) +
+      "," + Math.round(rect.width) + "," + Math.round(rect.height);
+  }
+
   function report() {
     var root = document.getElementById("root");
     var css = document.querySelectorAll('link[rel="stylesheet"]');
@@ -153,6 +186,11 @@
       pre.setAttribute("data-metodo-report", "true");
       pre.style.cssText = "white-space:pre-wrap;overflow-wrap:anywhere;background:#fffbeb;border:1px solid #f59e0b;padding:8px;font:12px/1.5 Consolas,monospace;";
       panel.appendChild(pre);
+      var paintButton = button("METODO-PAINT pending", function () { showPanel(false); });
+      paintButton.id = "metodo-paint-summary";
+      paintButton.setAttribute("data-metodo-paint-summary", "true");
+      paintButton.style.cssText += "display:block;white-space:normal;text-align:left;margin-bottom:6px;word-break:break-word;";
+      panel.appendChild(paintButton);
       panel.appendChild(button("Reload UI (keeps tasks)", function () { location.reload(); }));
       panel.appendChild(button("Close", function () { panel.remove(); panel = null; }));
       document.body.appendChild(panel);
@@ -161,6 +199,7 @@
       ? "The Windows app loaded but main screen content is missing. Do not clear or uninstall application data. Report only the technical fields below."
       : "Native renderer information. These fields contain no saved task content.";
     panel.querySelector("[data-metodo-report]").textContent = report();
+    panel.querySelector("[data-metodo-paint-summary]").textContent = paintSummary();
   }
   function mount() {
     if (!document.body) return;

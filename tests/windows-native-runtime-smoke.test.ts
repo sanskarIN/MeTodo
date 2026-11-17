@@ -44,6 +44,8 @@ describe("Windows native runtime verification", () => {
     expect(uia).toContain("documentControlPresent");
     expect(uia).toContain("GITHUB_ACTIONS");
     expect(probe).toContain("WINDOWS_TRIAL_RENDER.png");
+    expect(uia).toContain("METODO-PAINT ");
+    expect(uia).toContain("paintSummary");
     expect(uia).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|Get-Content/);
   });
   it("keeps diagnostics downloadable even when native verification fails", () => {
