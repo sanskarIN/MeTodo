@@ -10,7 +10,10 @@ on:
       - "lib/**"
       - "global.css"
       - "scripts/windows-web-smoke.mjs"
+      - "scripts/windows-diagnostic-bootstrap.js"
+      - "scripts/prepare-windows-export.mjs"
       - "tests/windows-viewport-layout.test.ts"
+      - "tests/windows-diagnostic-export.test.ts"
       - "assets/images/icon.png"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -103,7 +106,8 @@ jobs:
           }
           New-Item -ItemType Directory -Force "dist/windows-native" | Out-Null
           $version = node -p "require('./package.json').version"
-          $destination = "dist/windows-native/MeTodo-v$version-windows-x64-setup.exe"
+          $revision = $env:GITHUB_SHA.Substring(0, 12)
+          $destination = "dist/windows-native/MeTodo-v$version-windows-x64-trial-$revision-setup.exe"
           Copy-Item -LiteralPath $installers[0].FullName -Destination $destination
           if ((Get-Item $destination).Length -lt 1024) { throw "Installer is unexpectedly small" }
           $digest = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -122,7 +126,7 @@ jobs:
         with:
           name: metodo-windows-native-trial
           path: |
-            dist/windows-native/MeTodo-v*-windows-x64-setup.exe
+            dist/windows-native/MeTodo-v*-windows-x64-trial-*-setup.exe
             dist/windows-native/SHA256SUMS
           if-no-files-found: error
           retention-days: 14

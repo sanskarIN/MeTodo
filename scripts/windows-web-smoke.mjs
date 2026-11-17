@@ -12,6 +12,7 @@ import path from "node:path";
 const root = path.resolve("dist/windows-web");
 const index = path.join(root, "index.html");
 if (!existsSync(index)) throw new Error("Production web index.html is absent");
+if (!readFileSync(index, "utf8").includes('id="metodo-desktop-diagnostic"')) throw new Error("Desktop diagnostics missing from exported bundle");
 if (process.platform !== "win32") throw new Error("Smoke test requires Windows");
 const edgeLocations = [
   path.join(process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)", "Microsoft", "Edge", "Application", "msedge.exe"),
@@ -32,7 +33,7 @@ const probe = [
   ' const rect = heading && heading.getBoundingClientRect();',
   ' const created = create && create.getBoundingClientRect();',
   ' const visible = (r) => !!r && r.width >= 20 && r.height >= 8 && r.top >= -5 && r.top < window.innerHeight - 5;',
-  ' const pass = !!rootRect && rootRect.height >= 350 && visible(rect) &&',
+  ' const pass = !!document.documentElement.getAttribute("data-metodo-windows-trial") && !!rootRect && rootRect.height >= 350 && visible(rect) &&',
   '   !!created && created.width >= 20 && created.height >= 8;',
   ' document.documentElement.setAttribute("data-metodo-smoke-status", pass ? "pass" : "fail");',
   ' document.documentElement.setAttribute("data-metodo-smoke-details",',

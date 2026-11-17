@@ -47,3 +47,11 @@ References:
 - https://v2.tauri.app/start/prerequisites/
 - https://v2.tauri.app/distribute/windows-installer/
 - https://v2.tauri.app/reference/config/
+
+## Windows 11 blank-screen retest — 2026-11-17
+
+The owner confirmed that the prior viewport fix still leaves Home/Tasks/Settings blank inside installed WebView2. The earlier passing CI Microsoft Edge HTTP render is insufficient proof that the installed app works. The native trial must remain draft and out of stable publication.
+
+The new Windows-only build now injects a small revision badge into every exported HTML document. The badge gives the exact 12-character source revision; clicking it displays non-private diagnostics. If expected screen content does not become visible, a diagnostic panel appears after 10 seconds showing root/viewport dimensions and script error counts. This instrumentation never reads, clears or transmits tasks. CSS also explicitly sizes the React gesture root. The installer filename includes the source revision so that one trial cannot be mistaken for another. These are unverified mitigations until installed Windows tests pass.
+
+Close any running MeTodo.exe processes before reinstallation. The NSIS installer shares the prior trial's version and app identity. Choose the offered reinstall option rather than assuming it replaces a same-version installation automatically. **Never delete the existing WebView2 profile or AppData to diagnose a blank screen.** Verify setup.exe against SHA256SUMS, confirm the version badge matches the installer filename, test Home/Tasks/Settings, task CRUD, backup/restore, close/reopen persistence and privacy. If the badge is absent, record that the installed binary may still be old, or the diagnostic script may have failed to execute. Report only the technical diagnostic lines, not private task contents.
