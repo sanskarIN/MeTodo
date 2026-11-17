@@ -12,8 +12,10 @@ on:
       - "scripts/windows-web-smoke.mjs"
       - "scripts/windows-diagnostic-bootstrap.js"
       - "scripts/prepare-windows-export.mjs"
+      - "scripts/windows-native-webview2-smoke.mjs"
       - "tests/windows-viewport-layout.test.ts"
       - "tests/windows-diagnostic-export.test.ts"
+      - "tests/windows-native-runtime-smoke.test.ts"
       - "assets/images/icon.png"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -96,6 +98,16 @@ jobs:
           pnpm desktop:windows:build
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Probe compiled Tauri WebView2 runtime (advisory)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          node scripts/windows-native-webview2-smoke.mjs
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Installed Windows runtime not proven. This is a diagnostic trial only."
+            exit $LASTEXITCODE
+          }
+
       - name: Require actual Windows installer and write checksums
         shell: pwsh
         run: |
@@ -128,5 +140,6 @@ jobs:
           path: |
             dist/windows-native/MeTodo-v*-windows-x64-trial-*-setup.exe
             dist/windows-native/SHA256SUMS
+            dist/windows-native/NATIVE_WEBVIEW2_SMOKE.txt
           if-no-files-found: error
           retention-days: 14

@@ -1,0 +1,113 @@
+/**
+ * Advisory native Windows WebView2 smoke test (Node 22+).
+ * Runs the actual compiled Tauri executable, not an HTTP Edge export.
+ * Uses a localhost-only DevTools port on the ephemeral CI runner.
+ * Never reads or uploads local task data.
+ */
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
+
+if (process.platform !== "win32") throw new Error("Windows-only native renderer test");
+const exe = [
+  "src-tauri/target/release/metodo-desktop.exe",
+  "src-tauri/target/release/MeTodo.exe"
+].map(resolve).find(existsSync);
+if (!exe) throw new Error("Tauri desktop executable was not produced");
+const folder = resolve("dist/windows-native");
+mkdirSync(folder, { recursive: true });
+const output = resolve(folder, "NATIVE_WEBVIEW2_SMOKE.txt");
+const port = 17773;
+const child = spawn(exe, [], {
+  cwd: resolve("."), windowsHide: true, stdio: "ignore",
+  env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=" + port }
+});
+async function target() {
+  for (let i = 0; i < 45; i++) {
+    if (child.exitCode !== null) throw new Error("Tauri exited before WebView2 was ready");
+    try {
+      const response = await fetch("http://127.0.0.1:" + port + "/json/list",
+        { signal: AbortSignal.timeout(1300) });
+      if (response.ok) {
+        const pages = await response.json();
+        const page = pages.find(p => p.type === "page" && p.webSocketDebuggerUrl &&
+          !String(p.url).startsWith("devtools://"));
+        if (page) return page;
+      }
+    } catch { /* WebView2 process is not ready yet */ }
+    await sleep(850);
+  }
+  throw new Error("No inspectable WebView2 page in the Windows CI session");
+}
+async function connect(url) {
+  return new Promise((yes, no) => {
+    const ws = new WebSocket(url);
+    const timer = setTimeout(() => { ws.close(); no(new Error("CDP connection timeout")); }, 10000);
+    ws.addEventListener("open", () => { clearTimeout(timer); yes(ws); }, { once: true });
+    ws.addEventListener("error", () => { clearTimeout(timer); no(new Error("CDP connection failed")); }, { once: true });
+  });
+}
+let nextId = 0;
+async function evaluate(ws, expression) {
+  return new Promise((yes, no) => {
+    const id = ++nextId;
+    const timer = setTimeout(() => {
+      ws.removeEventListener("message", handler);
+      no(new Error("WebView2 evaluation timeout"));
+    }, 8000);
+    function handler(e) {
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.id !== id) return;
+      clearTimeout(timer);
+      ws.removeEventListener("message", handler);
+      if (msg.error || msg.result?.exceptionDetails) no(new Error("WebView2 renderer evaluation failed"));
+      else yes(msg.result?.result?.value);
+    }
+    ws.addEventListener("message", handler);
+    ws.send(JSON.stringify({ id, method: "Runtime.evaluate",
+      params: { expression, returnByValue: true } }));
+  });
+}
+const expression = [
+  "(() => {",
+  "const root=document.getElementById('root');",
+  "const r=root&&root.getBoundingClientRect();",
+  "const header=Array.from(document.querySelectorAll('h1,h2,h3,p,span,div')).find(",
+  "e=>e.childElementCount===0&&(e.textContent||'').trim()==='Stay productive');",
+  "const h=header&&header.getBoundingClientRect();",
+  "return {ready:document.readyState,",
+  "build:document.documentElement.getAttribute('data-metodo-windows-trial'),",
+  "badge:!!document.querySelector('[data-metodo-build-badge]'),",
+  "rootWidth:r?Math.round(r.width):0,rootHeight:r?Math.round(r.height):0,",
+  "headerVisible:!!(h&&h.width>20&&h.height>8&&h.top<innerHeight&&h.bottom>0)};",
+  "})()"
+].join("");
+
+let ws;
+try {
+  const page = await target();
+  ws = await connect(page.webSocketDebuggerUrl);
+  let metrics;
+  for (let i = 0; i < 12; i++) {
+    metrics = await evaluate(ws, expression);
+    if (metrics?.headerVisible && metrics.rootHeight >= 300 && metrics.badge) break;
+    await sleep(1200);
+  }
+  const pass = Boolean(metrics?.headerVisible && metrics.rootHeight >= 300 && metrics.badge);
+  const report = "Native Windows WebView2 test: " + (pass ? "PASS" : "FAIL") + "\n" +
+    JSON.stringify(metrics, null, 2) + "\n";
+  writeFileSync(output, report, "utf8");
+  console.log(report);
+  if (!pass) process.exitCode = 1;
+} catch (error) {
+  const report = "Native Windows WebView2 test: NOT VERIFIED\n" +
+    String(error?.message || error) + "\n";
+  writeFileSync(output, report, "utf8");
+  console.error(report);
+  process.exitCode = 1;
+} finally {
+  if (ws) ws.close();
+  if (child.pid) spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true });
+}
