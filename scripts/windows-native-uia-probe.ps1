@@ -140,7 +140,7 @@ try {
          $r.windowFound -and $r.homeHeaderVisible -and
          $r.tasksTabVisible -and $r.settingsTabVisible) {
         $r.navigationAttempted=$true
-        Add-Type -TypeDefinition @'
+        $mouseSource = @'
 using System;
 using System.Runtime.InteropServices;
 public static class MeTodoCIMouse {
@@ -149,7 +149,8 @@ public static class MeTodoCIMouse {
   [DllImport("user32.dll")] public static extern void mouse_event(
     uint flags, uint x, uint y, uint data, UIntPtr extraInfo);
 }
-'@ -Language CSharp
+'@
+        Add-Type -TypeDefinition $mouseSource -Language CSharp
         function Click-CITab([int]$x,[int]$y) {
           [MeTodoCIMouse]::SetForegroundWindow($hwnd) | Out-Null
           [MeTodoCIMouse]::SetCursorPos($x,$y) | Out-Null
