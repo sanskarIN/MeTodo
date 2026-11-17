@@ -37,9 +37,21 @@ jobs:
     timeout-minutes: 120
     env:
       CARGO_TERM_COLOR: always
+      METODO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Ensure source provenance matches exact PR head
+        shell: pwsh
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:METODO_SOURCE_SHA) {
+            throw "Ref mismatch: checked out $actual instead of intended $env:METODO_SOURCE_SHA"
+          }
+          "Trial source SHA: $actual" | Out-File $env:GITHUB_STEP_SUMMARY -Append
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -103,9 +115,17 @@ jobs:
         shell: pwsh
         run: |
           node scripts/windows-native-webview2-smoke.mjs
-          if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Installed Windows runtime not proven. This is a diagnostic trial only."
-            exit $LASTEXITCODE
+          $probeExit = $LASTEXITCODE
+          $report = "dist/windows-native/NATIVE_WEBVIEW2_SMOKE.txt"
+          if (-not (Test-Path $report)) {
+            New-Item -ItemType Directory -Force "dist/windows-native" | Out-Null
+            "Native Windows WebView2 test: NOT VERIFIED`nProbe terminated before writing diagnostics. Exit code: $probeExit" |
+              Set-Content -LiteralPath $report -Encoding utf8
+          }
+          Get-Content -LiteralPath $report | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          if ($probeExit -ne 0) {
+            Write-Warning "Native renderer runtime not proven; see NATIVE_WEBVIEW2_SMOKE.txt."
+            exit $probeExit
           }
 
       - name: Require actual Windows installer and write checksums
@@ -118,7 +138,7 @@ jobs:
           }
           New-Item -ItemType Directory -Force "dist/windows-native" | Out-Null
           $version = node -p "require('./package.json').version"
-          $revision = $env:GITHUB_SHA.Substring(0, 12)
+          $revision = $env:METODO_SOURCE_SHA.Substring(0, 12)
           $destination = "dist/windows-native/MeTodo-v$version-windows-x64-trial-$revision-setup.exe"
           Copy-Item -LiteralPath $installers[0].FullName -Destination $destination
           if ((Get-Item $destination).Length -lt 1024) { throw "Installer is unexpectedly small" }

@@ -5,24 +5,15 @@
  * Never reads or uploads local task data.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
-if (process.platform !== "win32") throw new Error("Windows-only native renderer test");
-const exe = [
-  "src-tauri/target/release/metodo-desktop.exe",
-  "src-tauri/target/release/MeTodo.exe"
-].map(resolve).find(existsSync);
-if (!exe) throw new Error("Tauri desktop executable was not produced");
 const folder = resolve("dist/windows-native");
 mkdirSync(folder, { recursive: true });
 const output = resolve(folder, "NATIVE_WEBVIEW2_SMOKE.txt");
 const port = 17773;
-const child = spawn(exe, [], {
-  cwd: resolve("."), windowsHide: true, stdio: "ignore",
-  env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "--remote-debugging-port=" + port }
-});
+let child;
 async function target() {
   for (let i = 0; i < 45; i++) {
     if (child.exitCode !== null) throw new Error("Tauri exited before WebView2 was ready");
@@ -87,6 +78,24 @@ const expression = [
 
 let ws;
 try {
+  if (process.platform !== "win32") throw new Error("Windows-only native renderer test");
+  const exe = [
+    "src-tauri/target/release/metodo-desktop.exe",
+    "src-tauri/target/release/MeTodo.exe"
+  ].map(resolve).find(existsSync);
+  if (!exe) {
+    const folder = resolve("src-tauri/target/release");
+    const names = existsSync(folder) ? readdirSync(folder).filter(name => name.endsWith(".exe")) : [];
+    throw new Error("Compiled Tauri executable unavailable. Other EXEs: " + names.join(", "));
+  }
+  child = spawn(exe, [], {
+    cwd: resolve("."), windowsHide: true, stdio: "ignore",
+    env: {
+      ...process.env,
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:
+        "--remote-debugging-address=127.0.0.1 --remote-debugging-port=" + port
+    }
+  });
   const page = await target();
   ws = await connect(page.webSocketDebuggerUrl);
   let metrics;
@@ -109,5 +118,5 @@ try {
   process.exitCode = 1;
 } finally {
   if (ws) ws.close();
-  if (child.pid) spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true });
+  if (child?.pid) spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true });
 }

@@ -14,11 +14,17 @@ function listHtml(root) {
 const destination = resolve("dist/windows-web");
 if (!existsSync(join(destination, "index.html"))) throw new Error("Missing Windows export index.html");
 const script = readFileSync("scripts/windows-diagnostic-bootstrap.js", "utf8");
-let sha = (process.env.GITHUB_SHA || "").trim();
-if (!/^[0-9a-f]{40}$/i.test(sha)) {
-  try { sha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(); }
-  catch { sha = ""; }
+const expected = (process.env.METODO_SOURCE_SHA || "").trim().toLowerCase();
+if (expected && !/^[0-9a-f]{40}$/.test(expected)) {
+  throw new Error("Invalid METODO_SOURCE_SHA in Windows trial environment");
 }
+let checkedOutSha = "";
+try { checkedOutSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim().toLowerCase(); }
+catch { /* local ZIP builds may lack .git */ }
+if (expected && checkedOutSha && expected !== checkedOutSha) {
+  throw new Error("Windows trial source revision differs from checked-out code");
+}
+const sha = expected || checkedOutSha || (process.env.GITHUB_SHA || "").trim();
 const revision = /^[0-9a-f]{40}$/i.test(sha) ? sha.toLowerCase().slice(0, 12) : "local-dev";
 const js = script.replace("__BUILD__", JSON.stringify(revision));
 if (js === script || /<\/script/i.test(js)) throw new Error("Unsafe diagnostic script content");

@@ -15,6 +15,15 @@ describe("Windows native runtime verification", () => {
     expect(probe).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|metodo_settings/);
     expect(probe).not.toMatch(/window\.localStorage|sessionStorage|sendBeacon/);
   });
+  it("uses exact source commit provenance and always uploads a sanitized result", () => {
+    const exporter = readFileSync("scripts/prepare-windows-export.mjs", "utf8");
+    expect(workflow).toContain("METODO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}");
+    expect(workflow).toContain("ref: ${{ github.event.pull_request.head.sha || github.sha }}");
+    expect(workflow).toContain("$env:METODO_SOURCE_SHA.Substring(0, 12)");
+    expect(workflow).toContain("Probe terminated before writing diagnostics");
+    expect(exporter).toContain("process.env.METODO_SOURCE_SHA");
+    expect(exporter).toContain("Windows trial source revision differs from checked-out code");
+  });
   it("is syntactically valid in Node", () => {
     expect(() => execFileSync(process.execPath, ["--check", "scripts/windows-native-webview2-smoke.mjs"])).not.toThrow();
   });
