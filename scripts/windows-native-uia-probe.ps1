@@ -13,6 +13,7 @@ $r=@{
   tasksTabBottom=0; settingsTabBottom=0
   tasksScreenVisible=$false; settingsScreenVisible=$false
   homeRoundtripVisible=$false; navigationAttempted=$false
+  createEntryVisible=$false; createScreenVisible=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
   sceneSummary="unavailable"
@@ -180,13 +181,41 @@ public static class MeTodoCIMouse {
         $r.settingsScreenVisible=StaticHeadingVisible "Customize your experience"
         Click-CITab $homeX $tabsY
         $r.homeRoundtripVisible=StaticHeadingVisible "Stay productive"
+        # Verify that task creation can be opened from the native Home
+        # dashboard. This route-only test never creates a persistent task.
+        if($r.homeRoundtripVisible) {
+          $createCondition=[System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty,
+            "+ Create New Task")
+          $createEntry=$w.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants,$createCondition)
+          if($null -ne $createEntry) {
+            $createBounds=$createEntry.Current.BoundingRectangle
+            $r.createEntryVisible=($createBounds.Width -ge 30 -and
+              $createBounds.Height -ge 8 -and -not $createEntry.Current.IsOffscreen)
+            if($r.createEntryVisible) {
+              # Stay to the left of the temporary diagnostic overlay.
+              $createX=[int][Math]::Min(
+                [Math]::Round($createBounds.Left+10), $bounds.Left+440)
+              $createY=[int][Math]::Round(
+                $createBounds.Top+$createBounds.Height/2)
+              Click-CITab $createX $createY
+              $r.createScreenVisible=StaticHeadingVisible "Create Task"
+            }
+          }
+        }
       }
       if($r.windowFound -and $r.homeHeaderVisible -and
          $r.tasksTabVisible -and $r.settingsTabVisible -and
          $r.navigationAttempted -and $r.tasksScreenVisible -and
-         $r.settingsScreenVisible -and $r.homeRoundtripVisible) {
+         $r.settingsScreenVisible -and $r.homeRoundtripVisible -and
+         $r.createEntryVisible -and $r.createScreenVisible) {
         $r.status="PASS"
-        $r.reason="native_home_tabs_and_navigation_roundtrip_visible"
+        $r.reason="native_navigation_and_create_task_route_visible"
+      } elseif($r.windowFound -and $r.homeHeaderVisible -and
+         $r.tasksTabVisible -and $r.settingsTabVisible -and
+         $r.homeRoundtripVisible) {
+        $r.reason="create_task_route_not_verified"
       } elseif($r.windowFound -and $r.homeHeaderVisible -and
          $r.tasksTabVisible -and $r.settingsTabVisible) {
         $r.reason="navigation_roundtrip_not_verified"

@@ -48,6 +48,9 @@ describe("Windows native runtime verification", () => {
     expect(uia).toContain("tasksScreenVisible");
     expect(uia).toContain("settingsScreenVisible");
     expect(uia).toContain("homeRoundtripVisible");
+    expect(uia).toContain("createEntryVisible");
+    expect(uia).toContain("createScreenVisible");
+    expect(uia).toContain('"\+ Create New Task"'.replace('\\',''));
     expect(uia).toContain("Click-CITab");
     expect(uia).toContain('StaticHeadingVisible "Manage your tasks"');
     expect(uia).toContain('StaticHeadingVisible "Customize your experience"');
