@@ -1,0 +1,22 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+describe("Windows blank-screen diagnostics", () => {
+  const bootstrap = readFileSync("scripts/windows-diagnostic-bootstrap.js", "utf8");
+  const exporter = readFileSync("scripts/prepare-windows-export.mjs", "utf8");
+  it("contains a build marker and a failure panel", () => {
+    expect(bootstrap).toContain("data-metodo-build-badge");
+    expect(bootstrap).toContain("Screen content visible");
+    expect(bootstrap).toContain("Reload UI (keeps tasks)");
+    expect(exporter).toContain('metodo-desktop-diagnostic');
+    expect(exporter).toContain("listHtml(destination)");
+  });
+  it("never reads or wipes private local tasks", () => {
+    expect(bootstrap).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|removeItem|sendBeacon|fetch\(/);
+    expect(bootstrap).not.toMatch(/location\.replace|sessionStorage/);
+  });
+  it("parses both new scripts as actual JavaScript", () => {
+    expect(() => execFileSync(process.execPath, ["--check", "scripts/windows-diagnostic-bootstrap.js"])).not.toThrow();
+    expect(() => execFileSync(process.execPath, ["--check", "scripts/prepare-windows-export.mjs"])).not.toThrow();
+  });
+});
