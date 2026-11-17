@@ -93,3 +93,9 @@ The forced geometry panel on the actual Windows build confirms: body/root/root-c
 ## Windows paint diagnostics exported to CI without DevTools (2026-11-17)
 
 When the native window contains the Home heading in the DOM but its text is not painted, the diagnostics panel now exposes a strictly whitelisted, technical `METODO-PAINT` summary through an accessible button. The Windows CI runner can record computed heading foreground color, effective ancestor opacity, whether an element covers the heading's hit-test point, and heading geometry from its fresh test profile. No private tasks, content, URLs, account data or storage are read, and debugging ports remain unnecessary. Read the `UIA.paintSummary` field in `NATIVE_WEBVIEW2_SMOKE.txt`. If the accessibility provider cannot expose the technical button, this field remains `unavailable` and native QA still fails.
+
+## Windows-only navigation transition experiment (2026-11-17)
+
+Run 44080650793 verified a genuine native Home heading DOM rectangle with computed gray foreground (`rgb(104,112,118)`), `alpha=1.000`, no hidden ancestor, and no hit-test overlay. This rules out simple missing markup, text/background color confusion, and 0-opacity ancestors while reproducing an invisible native Home screen. The remaining candidate causes include React Navigation/WebView2 compositing or rendering under Tauri's custom protocol.
+
+A **trial-only experiment** disables Stack and bottom-tab navigation transitions when `window.location.hostname === 'tauri.localhost'` (the packaged Windows Tauri origin). Browser web and mobile behavior stay unchanged. This is deliberately a hypothesis, not a validated fix: require a newly built Windows CI native screenshot/verified Home accessibility result before promoting it. If still blank, revert or isolate this experiment and investigate WebView2 composition rather than claiming support.
