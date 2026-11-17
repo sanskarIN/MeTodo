@@ -93,3 +93,9 @@ The forced geometry panel on the actual Windows build confirms: body/root/root-c
 ## Windows paint diagnostics exported to CI without DevTools (2026-11-17)
 
 When the native window contains the Home heading in the DOM but its text is not painted, the diagnostics panel now exposes a strictly whitelisted, technical `METODO-PAINT` summary through an accessible button. The Windows CI runner can record computed heading foreground color, effective ancestor opacity, whether an element covers the heading's hit-test point, and heading geometry from its fresh test profile. No private tasks, content, URLs, account data or storage are read, and debugging ports remain unnecessary. Read the `UIA.paintSummary` field in `NATIVE_WEBVIEW2_SMOKE.txt`. If the accessibility provider cannot expose the technical button, this field remains `unavailable` and native QA still fails.
+
+## Failed transition experiment and revised native paint diagnosis (2026-11-17)
+
+Run 44082695935 showed that disabling Stack/tab transitions only inside the Tauri origin did **not** change the native failure: the Home heading remained a nonzero DOM rectangle with readable gray text, full opacity and no hit-test overlay, while its visible accessibility check failed. The unsuccessful experiment was reverted, restoring the exact pre-experiment source tree.
+
+The diagnostic now measures computed WebKit text-fill color, ancestor clip/mask, and counts of opaque sibling backgrounds overlapping the heading point, including `pointer-events:none` layers that ordinary DOM hit testing ignores. It exposes only fixed technical paint metrics through a CI-only accessible button. Check `UIA.layerSummary` in the native smoke log, alongside `UIA.paintSummary`. Do not publish a stable Windows build without a visible native screen and functional Windows 11 verification.

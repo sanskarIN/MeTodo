@@ -127,6 +127,47 @@
       "," + Math.round(rect.width) + "," + Math.round(rect.height);
   }
 
+  function layerSummary() {
+    var h = fixedAnchor("Stay productive");
+    if (!h) return "METODO-LAYER dom=0";
+    var style = window.getComputedStyle(h);
+    var r = h.getBoundingClientRect();
+    var x = r.left + Math.min(5, r.width / 2);
+    var y = r.top + r.height / 2;
+    var ignoredPointerPaint = 0;
+    var otherPaint = 0;
+    var nodes = document.querySelectorAll("div,section,main,nav,aside");
+    for (var i = 0; i < nodes.length && i < 15000; i++) {
+      var el = nodes[i];
+      if (el === h || el.contains(h) || h.contains(el)) continue;
+      var b = el.getBoundingClientRect();
+      if (b.width < 8 || b.height < 8 || x < b.left || x >= b.right ||
+          y < b.top || y >= b.bottom) continue;
+      var st = window.getComputedStyle(el);
+      var bg = st.backgroundColor.replace(/\s+/g, "");
+      var paints = bg !== "transparent" && bg !== "rgba(0,0,0,0)" &&
+        bg !== "rgba(0,0,0,0.0)";
+      if (paints && Number(st.opacity) > 0) {
+        if (st.pointerEvents === "none") ignoredPointerPaint++;
+        else otherPaint++;
+      }
+    }
+    var clipping = "none";
+    for (var parent = h, depth = 0; parent && depth < 16;
+         parent = parent.parentElement, depth++) {
+      var ps = window.getComputedStyle(parent);
+      if (ps.clipPath !== "none" || ps.maskImage !== "none") {
+        clipping = "ancestor" + depth;
+        break;
+      }
+    }
+    var fill = (style.webkitTextFillColor || "unset").replace(
+      /[^a-zA-Z0-9(),. %]/g, "").slice(0, 45);
+    return "METODO-LAYER fill=" + fill +
+      " clip=" + clipping + " overflow=" + style.overflow +
+      " pointerlessBg=" + ignoredPointerPaint + " otherBg=" + otherPaint;
+  }
+
   function report() {
     var root = document.getElementById("root");
     var css = document.querySelectorAll('link[rel="stylesheet"]');
@@ -191,6 +232,10 @@
       paintButton.setAttribute("data-metodo-paint-summary", "true");
       paintButton.style.cssText += "display:block;white-space:normal;text-align:left;margin-bottom:6px;word-break:break-word;";
       panel.appendChild(paintButton);
+      var layerButton = button("METODO-LAYER pending", function () { showPanel(false); });
+      layerButton.setAttribute("data-metodo-layer-summary", "true");
+      layerButton.style.cssText += "display:block;white-space:normal;text-align:left;word-break:break-word;";
+      panel.appendChild(layerButton);
       panel.appendChild(button("Reload UI (keeps tasks)", function () { location.reload(); }));
       panel.appendChild(button("Close", function () { panel.remove(); panel = null; }));
       document.body.appendChild(panel);
@@ -200,6 +245,7 @@
       : "Native renderer information. These fields contain no saved task content.";
     panel.querySelector("[data-metodo-report]").textContent = report();
     panel.querySelector("[data-metodo-paint-summary]").textContent = paintSummary();
+    panel.querySelector("[data-metodo-layer-summary]").textContent = layerSummary();
   }
   function mount() {
     if (!document.body) return;

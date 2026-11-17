@@ -10,7 +10,7 @@ $r=@{
   windowFound=$false; homeHeaderVisible=$false
   homeTabFound=$false; tasksTabFound=$false; settingsTabFound=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
-  snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"
+  snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
 }
 try {
   Add-Type -AssemblyName UIAutomationClient
@@ -68,7 +68,10 @@ try {
         $candidate=$buttons.Item($i).Current.Name
         if($candidate -and $candidate.StartsWith("METODO-PAINT ")) {
           $r.paintSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,300))
-          break
+          continue
+        }
+        if($candidate -and $candidate.StartsWith("METODO-LAYER ")) {
+          $r.layerSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,300))
         }
       }
 

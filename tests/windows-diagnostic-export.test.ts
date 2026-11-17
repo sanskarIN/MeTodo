@@ -16,6 +16,9 @@ describe("Windows blank-screen diagnostics", () => {
     expect(bootstrap).toContain("METODO-PAINT ");
     expect(bootstrap).toContain("data-metodo-paint-summary");
     expect(bootstrap).toContain("alpha.toFixed(3)");
+    expect(bootstrap).toContain("METODO-LAYER ");
+    expect(bootstrap).toContain("data-metodo-layer-summary");
+    expect(bootstrap).toContain("webkitTextFillColor");
     expect(bootstrap).toContain("showPanel(!hasContent())");
     expect(bootstrap).toContain("Reload UI (keeps tasks)");
     expect(exporter).toContain('metodo-desktop-diagnostic');
