@@ -13,6 +13,8 @@ const folder = resolve("dist/windows-native");
 mkdirSync(folder, { recursive: true });
 const output = resolve(folder, "NATIVE_WEBVIEW2_SMOKE.txt");
 const port = 17773;
+// Native UI Automation now verifies resize, navigation, and synthetic writes.
+const uiaTimeoutMs = 180000;
 let child;
 async function target() {
   for (let i = 0; i < 45; i++) {
@@ -122,12 +124,20 @@ try {
       if (process.env.GITHUB_ACTIONS === "true") {
         args.push("-ScreenshotPath", resolve(folder, "WINDOWS_TRIAL_RENDER.png"));
       }
-      const json = execFileSync("powershell.exe", args,
-        { encoding: "utf8", windowsHide: true, timeout: 30000 }).trim();
+      const json = execFileSync("powershell.exe", args, {
+        encoding: "utf8", windowsHide: true, timeout: uiaTimeoutMs,
+        maxBuffer: 512 * 1024,
+      }).trim();
       uia = JSON.parse(json);
-    } catch {
+    } catch (probeError) {
+      // Never log subprocess output, local paths, or task data.
+      const cause = probeError?.code === "ETIMEDOUT"
+        ? "uia_probe_timed_out"
+        : probeError instanceof SyntaxError
+          ? "uia_probe_invalid_json"
+          : "uia_probe_script_failed";
       uia = { method: "Windows UI Automation", status: "NOT VERIFIED",
-        reason: "uia_probe_unavailable" };
+        reason: cause };
     }
   }
   const passed = uia?.status === "PASS" && uia?.windowFound === true &&

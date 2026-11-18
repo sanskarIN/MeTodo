@@ -155,3 +155,25 @@ The probe is gated by `GITHUB_ACTIONS=true`; do not run it against a user's
 existing profile. The native screenshot is captured **before** synthetic task
 creation and never captures user data. The Windows trial remains unsigned and
 the production audit remains a blocking failure until fixed upstream.
+
+
+## Native UI Automation timeout and sanitized phases (18 November 2026)
+
+The first synthetic task write attempt in run
+[44290972595](https://github.com/sanskarIN/MeTodo/actions/runs/44290972595)
+compiled an unsigned Windows installer and passed 70 tests (1 skipped),
+but native smoke returned `uia_probe_unavailable`. The Node process still
+allowed only 30 seconds for the Windows UI Automation subprocess, despite
+its expanded resize, navigation, and task-save exercise. This may have
+terminated the probe before it could return a result; it is not proof
+that task saving failed.
+
+The subprocess now has a 180-second timeout, and the native probe reports
+fixed technical phases (native_window_found, resize_window,
+navigation_after_resize, create_route, synthetic_title,
+synthetic_save_button, synthetic_save_result, complete).
+Node reports a fixed timeout, invalid JSON, or script-failure category,
+without returning PowerShell stdout/stderr, local paths or user data.
+
+A new exact-commit Windows CI run is required to confirm the write flow.
+Unsigned builds and the known dependency audit failure are not release ready.

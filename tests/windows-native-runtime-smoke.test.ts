@@ -50,6 +50,12 @@ describe("Windows native runtime verification", () => {
     expect(probe).toContain('uia?.syntheticTaskSaveClicked === true');
     expect(probe).toContain('uia?.syntheticTaskVisibleInTasks === true');
     expect(uia).toContain("MoveWindow(");
+    expect(probe).toContain("const uiaTimeoutMs = 180000");
+    expect(probe).toContain("timeout: uiaTimeoutMs");
+    expect(probe).toContain('"uia_probe_timed_out"');
+    expect(probe).toContain('"uia_probe_script_failed"');
+    expect(uia).toContain('phase="synthetic_save_result"');
+    expect(uia).toContain('phase="complete"');
     expect(uia).toContain("resizeAttempted");
     expect(uia).toContain("resizeWindowChanged");
     expect(uia).toContain("resizeHomeVisible");

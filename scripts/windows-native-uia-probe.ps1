@@ -6,7 +6,7 @@ param(
 )
 $ErrorActionPreference="Stop"
 $r=@{
-  method="Windows UI Automation"; status="NOT VERIFIED"
+  method="Windows UI Automation"; status="NOT VERIFIED"; phase="initializing"
   windowFound=$false; homeHeaderVisible=$false
   homeTabFound=$false; tasksTabFound=$false; settingsTabFound=$false
   tasksTabVisible=$false; settingsTabVisible=$false; desktopWorkAreaBottom=0
@@ -45,6 +45,7 @@ try {
     } else {
       $bounds=$w.Current.BoundingRectangle
       $r.windowFound=($bounds.Width -ge 300 -and $bounds.Height -ge 200)
+      $r.phase="native_window_found"
       $r.windowWidth=[int]$bounds.Width
       $r.windowHeight=[int]$bounds.Height
       $r.homeTabFound=($null -ne $w.FindFirst(
@@ -182,6 +183,7 @@ public static class MeTodoCIMouse {
         # Resize the actual Tauri window before checking tab navigation. This
         # catches the collapsed-screen regression after a native size change.
         # Only fixed public headings, tab positions, and geometry are inspected.
+        $r.phase="resize_window"
         $r.resizeAttempted=$true
         $targetWidth=[int][Math]::Min(880,[int]$bounds.Width-70)
         $targetHeight=[int][Math]::Min(620,[int]$bounds.Height-45)
@@ -224,6 +226,7 @@ public static class MeTodoCIMouse {
         # Never click stale tab coordinates if the resize gate failed.
         if($r.resizeWindowChanged -and $r.resizeHomeVisible -and
            $r.resizeTabsVisible) {
+        $r.phase="navigation_after_resize"
         $tasksX=[int][Math]::Round($tasksBounds.Left+$tasksBounds.Width/2)
         $settingsX=[int][Math]::Round($settingsBounds.Left+$settingsBounds.Width/2)
         $tabsY=[int][Math]::Round($tasksBounds.Top+$tasksBounds.Height/2)
@@ -254,10 +257,12 @@ public static class MeTodoCIMouse {
                 $createBounds.Top+$createBounds.Height/2)
               Click-CITab $createX $createY
               $r.createScreenVisible=StaticHeadingVisible "Create Task"
+              $r.phase="create_route"
               # Synthetic, fixed-content functional test in the disposable
               # GitHub Actions profile ONLY. Never enumerate task titles or
               # touch user backup files, storage keys, or task data.
               if($r.createScreenVisible) {
+                $r.phase="synthetic_title"
                 $ciTitle="MeTodo CI Smoke Task"
                 $inputCondition=[System.Windows.Automation.AndCondition]::new(
                   [System.Windows.Automation.PropertyCondition]::new(
@@ -293,6 +298,7 @@ public static class MeTodoCIMouse {
                     $ciSave=$w.FindFirst(
                       [System.Windows.Automation.TreeScope]::Descendants,
                       $saveCondition)
+                    $r.phase="synthetic_save_button"
                     $r.syntheticTaskSaveFound=($null -ne $ciSave)
                     if($null -ne $ciSave) {
                       # Scroll the known save button into view using the
@@ -317,6 +323,7 @@ public static class MeTodoCIMouse {
                         $saveY=[int][Math]::Round(
                           $saveBounds.Top+$saveBounds.Height/2)
                         Click-CITab $saveX $saveY
+                        $r.phase="synthetic_save_result"
                         $r.syntheticTaskSaveClicked=$true
                         $r.syntheticTaskReturnedHome=StaticHeadingVisible "Stay productive"
                         if($r.syntheticTaskReturnedHome) {
@@ -358,6 +365,7 @@ public static class MeTodoCIMouse {
          $r.syntheticTaskReturnedHome -and $r.syntheticTaskVisibleInTasks) {
         $r.status="PASS"
         $r.reason="native_resize_navigation_and_synthetic_task_saved"
+        $r.phase="complete"
       } elseif($r.createScreenVisible -and -not $r.syntheticTaskVisibleInTasks) {
         $r.reason="synthetic_task_create_and_save_not_verified"
       } elseif($r.resizeAttempted -and -not (
