@@ -43,7 +43,12 @@ describe("Windows native runtime verification", () => {
     expect(uia).toContain("tasksTabVisible");
     expect(uia).toContain("settingsTabVisible");
     expect(uia).toContain("desktopWorkAreaBottom");
-    expect(uia).toContain("native_resize_navigation_and_create_task_route_visible");
+    expect(uia).toContain("native_resize_navigation_and_synthetic_task_saved");
+    expect(uia).toContain('syntheticTaskVisibleInTasks');
+    expect(uia).toContain('MeTodo CI Smoke Task');
+    expect(uia).toContain('accessibility provider');
+    expect(probe).toContain('uia?.syntheticTaskSaveClicked === true');
+    expect(probe).toContain('uia?.syntheticTaskVisibleInTasks === true');
     expect(uia).toContain("MoveWindow(");
     expect(uia).toContain("resizeAttempted");
     expect(uia).toContain("resizeWindowChanged");
@@ -76,6 +81,12 @@ describe("Windows native runtime verification", () => {
     expect(uia).toContain("METODO-LAYER ");
     expect(uia).toContain("layerSummary");
     expect(uia).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|Get-Content/);
+  });
+  it("uses accessible, fixed-input labels for the Windows synthetic task smoke", () => {
+    const create = readFileSync("app/create-task.tsx", "utf8");
+    expect(create).toContain('accessibilityLabel="Task title"');
+    expect(create).toContain('accessibilityLabel="Save new task"');
+    expect(create).toContain('accessibilityRole="button"');
   });
   it("keeps diagnostics downloadable even when native verification fails", () => {
     expect(workflow).not.toContain("continue-on-error: true");

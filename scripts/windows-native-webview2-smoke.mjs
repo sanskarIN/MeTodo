@@ -134,7 +134,10 @@ try {
     uia?.homeHeaderVisible === true && uia?.resizeAttempted === true &&
     uia?.resizeWindowChanged === true && uia?.resizeHomeVisible === true &&
     uia?.resizeTabsVisible === true && uia?.tasksScreenVisible === true &&
-    uia?.settingsScreenVisible === true && uia?.createScreenVisible === true;
+    uia?.settingsScreenVisible === true && uia?.createScreenVisible === true &&
+    uia?.syntheticTaskTyped === true && uia?.syntheticTaskSaveClicked === true &&
+    uia?.syntheticTaskReturnedHome === true &&
+    uia?.syntheticTaskVisibleInTasks === true;
   const report = "Native Windows WebView2 test: " +
     (passed ? "PASS (Windows UI Automation fallback)" : "NOT VERIFIED") + "\n" +
     "CDP: " + String(error?.message || error) + "\n" +

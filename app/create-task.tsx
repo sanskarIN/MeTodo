@@ -112,6 +112,8 @@ export default function CreateTaskScreen() {
         <View className="px-4 mb-6">
           <Text className="text-sm font-semibold text-muted mb-2">Task Title</Text>
           <TextInput
+            accessibilityLabel="Task title"
+            accessibilityHint="Required. Enter a title for this task."
             placeholder="Enter task title..."
             value={title}
             onChangeText={setTitle}
@@ -240,6 +242,8 @@ export default function CreateTaskScreen() {
         <View className="px-4 pb-6 gap-3">
           <TouchableOpacity
             onPress={handleCreateTask}
+            accessibilityRole="button"
+            accessibilityLabel="Save new task"
             style={{ backgroundColor: colors.primary }}
             className="rounded-2xl py-4 items-center active:opacity-80"
           >

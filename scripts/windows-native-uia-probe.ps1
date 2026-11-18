@@ -17,6 +17,9 @@ $r=@{
   resizeHomeVisible=$false; resizeTabsVisible=$false
   resizedWidth=0; resizedHeight=0
   createEntryVisible=$false; createScreenVisible=$false
+  syntheticTaskInputFound=$false; syntheticTaskTyped=$false
+  syntheticTaskSaveFound=$false; syntheticTaskSaveClicked=$false
+  syntheticTaskReturnedHome=$false; syntheticTaskVisibleInTasks=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
   sceneSummary="unavailable"
@@ -251,6 +254,93 @@ public static class MeTodoCIMouse {
                 $createBounds.Top+$createBounds.Height/2)
               Click-CITab $createX $createY
               $r.createScreenVisible=StaticHeadingVisible "Create Task"
+              # Synthetic, fixed-content functional test in the disposable
+              # GitHub Actions profile ONLY. Never enumerate task titles or
+              # touch user backup files, storage keys, or task data.
+              if($r.createScreenVisible) {
+                $ciTitle="MeTodo CI Smoke Task"
+                $inputCondition=[System.Windows.Automation.AndCondition]::new(
+                  [System.Windows.Automation.PropertyCondition]::new(
+                    [System.Windows.Automation.AutomationElement]::NameProperty,
+                    "Task title"),
+                  [System.Windows.Automation.PropertyCondition]::new(
+                    [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                    [System.Windows.Automation.ControlType]::Edit))
+                $ciInput=$w.FindFirst(
+                  [System.Windows.Automation.TreeScope]::Descendants,$inputCondition)
+                if($null -ne $ciInput) {
+                  $inputBounds=$ciInput.Current.BoundingRectangle
+                  $r.syntheticTaskInputFound=(
+                    $inputBounds.Width -ge 100 -and
+                    $inputBounds.Height -ge 20 -and
+                    -not $ciInput.Current.IsOffscreen)
+                  if($r.syntheticTaskInputFound) {
+                    $inputX=[int][Math]::Round(
+                      $inputBounds.Left+$inputBounds.Width/2)
+                    $inputY=[int][Math]::Round(
+                      $inputBounds.Top+$inputBounds.Height/2)
+                    Click-CITab $inputX $inputY
+                    [System.Windows.Forms.SendKeys]::SendWait($ciTitle)
+                    Start-Sleep -Milliseconds 400
+                    $r.syntheticTaskTyped=$true
+                    $saveCondition=[System.Windows.Automation.AndCondition]::new(
+                      [System.Windows.Automation.PropertyCondition]::new(
+                        [System.Windows.Automation.AutomationElement]::NameProperty,
+                        "Save new task"),
+                      [System.Windows.Automation.PropertyCondition]::new(
+                        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                        [System.Windows.Automation.ControlType]::Button))
+                    $ciSave=$w.FindFirst(
+                      [System.Windows.Automation.TreeScope]::Descendants,
+                      $saveCondition)
+                    $r.syntheticTaskSaveFound=($null -ne $ciSave)
+                    if($null -ne $ciSave) {
+                      # Scroll the known save button into view using the
+                      # accessibility provider; never guess hidden coordinates.
+                      $scrollItem=$null
+                      if($ciSave.TryGetCurrentPattern(
+                          [System.Windows.Automation.ScrollItemPattern]::Pattern,
+                          [ref]$scrollItem)) {
+                        $scrollItem.ScrollIntoView()
+                        Start-Sleep -Milliseconds 350
+                      }
+                      $saveBounds=$ciSave.Current.BoundingRectangle
+                      $clickable=(
+                        -not $ciSave.Current.IsOffscreen -and
+                        $saveBounds.Width -ge 40 -and
+                        $saveBounds.Height -ge 20 -and
+                        $saveBounds.Top -ge $workArea.Top -and
+                        $saveBounds.Bottom -le $workArea.Bottom)
+                      if($clickable) {
+                        $saveX=[int][Math]::Round(
+                          $saveBounds.Left+$saveBounds.Width/2)
+                        $saveY=[int][Math]::Round(
+                          $saveBounds.Top+$saveBounds.Height/2)
+                        Click-CITab $saveX $saveY
+                        $r.syntheticTaskSaveClicked=$true
+                        $r.syntheticTaskReturnedHome=StaticHeadingVisible "Stay productive"
+                        if($r.syntheticTaskReturnedHome) {
+                          Click-CITab $tasksX $tabsY
+                          if(StaticHeadingVisible "Manage your tasks") {
+                            $syntheticLabel=$w.FindFirst(
+                              [System.Windows.Automation.TreeScope]::Descendants,
+                              [System.Windows.Automation.PropertyCondition]::new(
+                                [System.Windows.Automation.AutomationElement]::NameProperty,
+                                $ciTitle))
+                            if($null -ne $syntheticLabel) {
+                              $labelBounds=$syntheticLabel.Current.BoundingRectangle
+                              $r.syntheticTaskVisibleInTasks=(
+                                $labelBounds.Width -ge 40 -and
+                                $labelBounds.Height -ge 8 -and
+                                -not $syntheticLabel.Current.IsOffscreen)
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -262,9 +352,14 @@ public static class MeTodoCIMouse {
          $r.resizeHomeVisible -and $r.resizeTabsVisible -and
          $r.navigationAttempted -and $r.tasksScreenVisible -and
          $r.settingsScreenVisible -and $r.homeRoundtripVisible -and
-         $r.createEntryVisible -and $r.createScreenVisible) {
+         $r.createEntryVisible -and $r.createScreenVisible -and
+         $r.syntheticTaskInputFound -and $r.syntheticTaskTyped -and
+         $r.syntheticTaskSaveFound -and $r.syntheticTaskSaveClicked -and
+         $r.syntheticTaskReturnedHome -and $r.syntheticTaskVisibleInTasks) {
         $r.status="PASS"
-        $r.reason="native_resize_navigation_and_create_task_route_visible"
+        $r.reason="native_resize_navigation_and_synthetic_task_saved"
+      } elseif($r.createScreenVisible -and -not $r.syntheticTaskVisibleInTasks) {
+        $r.reason="synthetic_task_create_and_save_not_verified"
       } elseif($r.resizeAttempted -and -not (
          $r.resizeWindowChanged -and $r.resizeHomeVisible -and
          $r.resizeTabsVisible)) {

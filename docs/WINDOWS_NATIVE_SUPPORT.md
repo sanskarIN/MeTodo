@@ -138,3 +138,20 @@ This remains an unsigned diagnostic build. Real Windows 11 installation,
 task CRUD, backup/restore, close/reopen persistence and offline operation
 must be checked independently. The production-dependency security audit is
 still blocking regardless of whether a diagnostic installer was uploaded.
+
+
+## Native synthetic task creation gate (18 November 2026)
+
+After verifying the native Windows resize and route navigation, GitHub Actions
+uses a **disposable CI-only WebView2 profile** to enter the fixed, nonpersonal
+title `MeTodo CI Smoke Task` into the task title field and click the accessible
+Save new task button. It checks that the app returns Home and that the
+synthetic task is visible on the Tasks screen. No task names are copied into
+CI reports; the result is recorded as fixed boolean fields. This is an
+actual UI-to-persistence-write smoke, but it does not yet prove durability
+after process restart, backup/restore, or the full CRUD sequence.
+
+The probe is gated by `GITHUB_ACTIONS=true`; do not run it against a user's
+existing profile. The native screenshot is captured **before** synthetic task
+creation and never captures user data. The Windows trial remains unsigned and
+the production audit remains a blocking failure until fixed upstream.
