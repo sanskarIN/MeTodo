@@ -22,6 +22,11 @@ describe("Windows blank-screen diagnostics", () => {
     expect(bootstrap).toContain('node.style.setProperty("min-height"');
     expect(bootstrap).toContain("METODO-CHAIN ");
     expect(bootstrap).toContain("nodes.reverse()");
+    expect(bootstrap).toContain("function currentSceneAnchor()");
+    expect(bootstrap).toContain("function refreshRepairedScene()");
+    expect(bootstrap).toContain("new MutationObserver(queueSceneRecovery)");
+    expect(bootstrap).toContain('window.addEventListener("resize", queueSceneRecovery)');
+    expect(bootstrap).toContain("subscribeSceneRecovery()");
     expect(bootstrap).toContain("nearest positive ancestor");
     expect(bootstrap).toContain("data-metodo-layer-summary");
     expect(bootstrap).toContain("webkitTextFillColor");

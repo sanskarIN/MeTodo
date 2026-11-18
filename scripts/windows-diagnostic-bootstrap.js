@@ -190,8 +190,44 @@
     }
     return "METODO-CHAIN " + parts.join("|");
   }
+  // Only fixed screen headings are eligible for scene recovery. The page may
+  // keep inactive routes mounted, so reject offscreen/hidden headings.
+  function currentSceneAnchor() {
+    var labels = ["Stay productive", "Manage your tasks",
+      "Customize your experience", "Create Task"];
+    for (var i = 0; i < labels.length; i++) {
+      var header = fixedAnchor(labels[i]);
+      if (!header) continue;
+      var r = header.getBoundingClientRect();
+      var style = window.getComputedStyle(header);
+      if (r.width >= 20 && r.height >= 8 && r.top >= 0 &&
+          r.top < innerHeight && style.display !== "none" &&
+          style.visibility !== "hidden") return header;
+    }
+    return null;
+  }
+  // Fixed pixel heights from a previous repair must follow subsequent window
+  // resizing. Ignore repaired parents when finding available viewport space.
+  function refreshRepairedScene() {
+    var repaired = document.querySelectorAll('[data-metodo-repaired-scene="true"]');
+    for (var i = 0; i < repaired.length; i++) {
+      var node = repaired[i];
+      for (var parent = node.parentElement, d = 0;
+           parent && d < 18; parent = parent.parentElement, d++) {
+        if (parent.hasAttribute("data-metodo-repaired-scene")) continue;
+        var bounds = parent.getBoundingClientRect();
+        if (bounds.width < 250 || bounds.height < 250) continue;
+        var available = Math.floor(Math.min(bounds.height, innerHeight));
+        if (node.style.height !== available + "px") {
+          node.style.setProperty("min-height", available + "px", "important");
+          node.style.setProperty("height", available + "px", "important");
+        }
+        break;
+      }
+    }
+  }
   function repairCollapsedScene() {
-    var header = fixedAnchor("Stay productive");
+    var header = currentSceneAnchor();
     if (!header) {
       sceneBefore = "heading_absent";
       return;
@@ -345,8 +381,39 @@
       document.body.appendChild(badge);
     }
   }
+  // React Navigation can replace entire scenes long after the first minute.
+  // Coalesce mutations so repair work never runs in every DOM mutation callback.
+  function subscribeSceneRecovery() {
+    var root = document.getElementById("root");
+    if (!root) {
+      setTimeout(subscribeSceneRecovery, 250);
+      return;
+    }
+    var queued = false;
+    function queueSceneRecovery() {
+      if (queued) return;
+      queued = true;
+      setTimeout(function () {
+        queued = false;
+        refreshRepairedScene();
+        repairCollapsedScene();
+      }, 120);
+    }
+    if (typeof MutationObserver === "function") {
+      new MutationObserver(queueSceneRecovery).observe(root, {
+        subtree: true, childList: true
+      });
+    }
+    window.addEventListener("resize", queueSceneRecovery);
+    window.addEventListener("pageshow", queueSceneRecovery);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) queueSceneRecovery();
+    });
+    queueSceneRecovery();
+  }
   function check() {
     mount();
+    refreshRepairedScene();
     repairCollapsedScene();
     // This is a Windows-only unsigned diagnostic build. Show the technical
     // state even if a DOM bounding rect incorrectly claims content is visible
@@ -355,6 +422,7 @@
   }
   function start() {
     mount();
+    subscribeSceneRecovery();
     setTimeout(check, 3000);
     setTimeout(check, 10000);
     setTimeout(check, 18000);
