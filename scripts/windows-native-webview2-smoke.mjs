@@ -145,7 +145,10 @@ try {
     uia?.resizeWindowChanged === true && uia?.resizeHomeVisible === true &&
     uia?.resizeTabsVisible === true && uia?.tasksScreenVisible === true &&
     uia?.settingsScreenVisible === true && uia?.createScreenVisible === true &&
-    uia?.syntheticTaskTyped === true && uia?.syntheticTaskSaveClicked === true &&
+    uia?.syntheticTaskTyped === true &&
+    uia?.syntheticTaskInputClickSafe === true &&
+    uia?.syntheticTaskSaveClickSafe === true &&
+    uia?.syntheticTaskSaveClicked === true &&
     uia?.syntheticTaskReturnedHome === true &&
     uia?.syntheticTaskVisibleInTasks === true;
   const report = "Native Windows WebView2 test: " +

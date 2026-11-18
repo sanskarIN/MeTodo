@@ -177,3 +177,25 @@ without returning PowerShell stdout/stderr, local paths or user data.
 
 A new exact-commit Windows CI run is required to confirm the write flow.
 Unsigned builds and the known dependency audit failure are not release ready.
+
+
+## Synthetic task smoke: prevent diagnostic overlay intercepting clicks
+
+The expanded UIA smoke in
+[run 44295626294](https://github.com/sanskarIN/MeTodo/actions/runs/44295626294)
+reached the synthetic save stage: the input and save button were discoverable,
+but returning Home was not observed. This is not sufficient evidence that
+storage failed. The native diagnostic overlay sits in the top-right of the
+trial window and can intercept center-of-control clicks on wide React Native
+form fields.
+
+The fixed Windows UIA probe clicks a point inside the **left side** of both
+the title input and the Save button, asserts those coordinates are outside
+the right diagnostic panel, and compares any available accessibility
+ValuePattern with the single fixed CI title (emits a boolean only). It
+polls for Home after a Save click to avoid mistaking slower async writes
+for failure. The Tasks screen still must display the fixed synthetic title;
+the smoke cannot pass merely because an input event or click was sent.
+
+No production task data is read, no real profile is used, and the build
+remains an unsigned diagnostic trial. The security audit is still blocking.

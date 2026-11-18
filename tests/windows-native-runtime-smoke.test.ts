@@ -55,6 +55,15 @@ describe("Windows native runtime verification", () => {
     expect(probe).toContain('"uia_probe_timed_out"');
     expect(probe).toContain('"uia_probe_script_failed"');
     expect(uia).toContain('phase="synthetic_save_result"');
+    expect(uia).toContain("syntheticTaskInputClickSafe");
+    expect(uia).toContain("syntheticTaskSaveClickSafe");
+    expect(uia).toContain("syntheticTaskInputValueMatched");
+    expect(uia).toContain("synthetic_task_input_text_not_received");
+    expect(uia).toContain("synthetic_save_control_obscured");
+    expect(uia).toContain("$inputBounds.Left+[Math]::Min(24,$inputBounds.Width/8)");
+    expect(uia).toContain("$saveBounds.Left+[Math]::Min(24,$saveBounds.Width/8)");
+    expect(probe).toContain("uia?.syntheticTaskInputClickSafe === true");
+    expect(probe).toContain("uia?.syntheticTaskSaveClickSafe === true");
     expect(uia).toContain('phase="complete"');
     expect(uia).toContain("resizeAttempted");
     expect(uia).toContain("resizeWindowChanged");

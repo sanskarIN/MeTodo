@@ -18,6 +18,8 @@ $r=@{
   resizedWidth=0; resizedHeight=0
   createEntryVisible=$false; createScreenVisible=$false
   syntheticTaskInputFound=$false; syntheticTaskTyped=$false
+  syntheticTaskInputValueAvailable=$false; syntheticTaskInputValueMatched=$false
+  syntheticTaskInputClickSafe=$false; syntheticTaskSaveClickSafe=$false
   syntheticTaskSaveFound=$false; syntheticTaskSaveClicked=$false
   syntheticTaskReturnedHome=$false; syntheticTaskVisibleInTasks=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
@@ -280,14 +282,36 @@ public static class MeTodoCIMouse {
                     $inputBounds.Height -ge 20 -and
                     -not $ciInput.Current.IsOffscreen)
                   if($r.syntheticTaskInputFound) {
+                    # A trial diagnostic panel occupies the top-right of the
+                    # window. Center clicks on wide inputs can hit that panel
+                    # instead of the underlying React Native text field.
+                    # Target the left interior, never the panel side.
                     $inputX=[int][Math]::Round(
-                      $inputBounds.Left+$inputBounds.Width/2)
+                      $inputBounds.Left+[Math]::Min(24,$inputBounds.Width/8))
                     $inputY=[int][Math]::Round(
                       $inputBounds.Top+$inputBounds.Height/2)
-                    Click-CITab $inputX $inputY
-                    [System.Windows.Forms.SendKeys]::SendWait($ciTitle)
-                    Start-Sleep -Milliseconds 400
-                    $r.syntheticTaskTyped=$true
+                    $r.syntheticTaskInputClickSafe=(
+                      $inputX -lt ($bounds.Right-465))
+                    if($r.syntheticTaskInputClickSafe) {
+                      Click-CITab $inputX $inputY
+                      [System.Windows.Forms.SendKeys]::SendWait($ciTitle)
+                      Start-Sleep -Milliseconds 650
+                      $valuePattern=$null
+                      if($ciInput.TryGetCurrentPattern(
+                          [System.Windows.Automation.ValuePattern]::Pattern,
+                          [ref]$valuePattern)) {
+                        $r.syntheticTaskInputValueAvailable=$true
+                        # Do not emit the input's contents; only compare the
+                        # value against the fixed disposable CI test string.
+                        $r.syntheticTaskInputValueMatched=(
+                          $valuePattern.Current.Value -ceq $ciTitle)
+                      }
+                      # If UIA does not expose ValuePattern, the later task
+                      # list assertion is still the final functional check.
+                      $r.syntheticTaskTyped=(
+                        -not $r.syntheticTaskInputValueAvailable -or
+                        $r.syntheticTaskInputValueMatched)
+                    }
                     $saveCondition=[System.Windows.Automation.AndCondition]::new(
                       [System.Windows.Automation.PropertyCondition]::new(
                         [System.Windows.Automation.AutomationElement]::NameProperty,
@@ -300,7 +324,7 @@ public static class MeTodoCIMouse {
                       $saveCondition)
                     $r.phase="synthetic_save_button"
                     $r.syntheticTaskSaveFound=($null -ne $ciSave)
-                    if($null -ne $ciSave) {
+                    if($null -ne $ciSave -and $r.syntheticTaskTyped) {
                       # Scroll the known save button into view using the
                       # accessibility provider; never guess hidden coordinates.
                       $scrollItem=$null
@@ -318,14 +342,28 @@ public static class MeTodoCIMouse {
                         $saveBounds.Top -ge $workArea.Top -and
                         $saveBounds.Bottom -le $workArea.Bottom)
                       if($clickable) {
+                        # The same diagnostic panel can obscure the center of
+                        # the wide Save button. Click the left interior.
                         $saveX=[int][Math]::Round(
-                          $saveBounds.Left+$saveBounds.Width/2)
+                          $saveBounds.Left+[Math]::Min(24,$saveBounds.Width/8))
                         $saveY=[int][Math]::Round(
                           $saveBounds.Top+$saveBounds.Height/2)
-                        Click-CITab $saveX $saveY
-                        $r.phase="synthetic_save_result"
-                        $r.syntheticTaskSaveClicked=$true
-                        $r.syntheticTaskReturnedHome=StaticHeadingVisible "Stay productive"
+                        $r.syntheticTaskSaveClickSafe=(
+                          $saveX -lt ($bounds.Right-465))
+                        if($r.syntheticTaskSaveClickSafe) {
+                          Click-CITab $saveX $saveY
+                          $r.phase="synthetic_save_result"
+                          $r.syntheticTaskSaveClicked=$true
+                          # Disk persistence and navigation can complete later
+                          # than the click animation on hosted Windows runners.
+                          for($attempt=0;$attempt -lt 12;$attempt++) {
+                            if(StaticHeadingVisible "Stay productive") {
+                              $r.syntheticTaskReturnedHome=$true
+                              break
+                            }
+                            Start-Sleep -Milliseconds 400
+                          }
+                        }
                         if($r.syntheticTaskReturnedHome) {
                           Click-CITab $tasksX $tabsY
                           if(StaticHeadingVisible "Manage your tasks") {
@@ -361,11 +399,18 @@ public static class MeTodoCIMouse {
          $r.settingsScreenVisible -and $r.homeRoundtripVisible -and
          $r.createEntryVisible -and $r.createScreenVisible -and
          $r.syntheticTaskInputFound -and $r.syntheticTaskTyped -and
+         $r.syntheticTaskInputClickSafe -and $r.syntheticTaskSaveClickSafe -and
          $r.syntheticTaskSaveFound -and $r.syntheticTaskSaveClicked -and
          $r.syntheticTaskReturnedHome -and $r.syntheticTaskVisibleInTasks) {
         $r.status="PASS"
         $r.reason="native_resize_navigation_and_synthetic_task_saved"
         $r.phase="complete"
+      } elseif($r.syntheticTaskInputValueAvailable -and
+         -not $r.syntheticTaskInputValueMatched) {
+        $r.reason="synthetic_task_input_text_not_received"
+      } elseif($r.syntheticTaskSaveFound -and
+         -not $r.syntheticTaskSaveClickSafe) {
+        $r.reason="synthetic_save_control_obscured"
       } elseif($r.createScreenVisible -and -not $r.syntheticTaskVisibleInTasks) {
         $r.reason="synthetic_task_create_and_save_not_verified"
       } elseif($r.resizeAttempted -and -not (
