@@ -199,3 +199,27 @@ the smoke cannot pass merely because an input event or click was sent.
 
 No production task data is read, no real profile is used, and the build
 remains an unsigned diagnostic trial. The security audit is still blocking.
+
+
+## Nonblocking diagnostic overlay (18 November 2026)
+
+Native Windows trial checks previously called `showPanel(!hasContent())`
+on every startup diagnostic tick. Because `showPanel(false)` still creates
+the large top-right overlay, it could cover normal form controls in an
+otherwise healthy app. The trial now **only auto-opens** that overlay for
+a genuinely missing screen, including the previously diagnosed case
+where a heading has nonzero dimensions but a zero-height ancestor clips it.
+Once such a screen recovers, its auto-opened panel closes. Users can still
+open it explicitly using the small Windows trial diagnostics badge; an
+explicitly opened panel remains until the user closes it.
+
+The Windows UIA probe opens the badge just long enough to read fixed
+nonpersonal `METODO-*` diagnostic buttons and closes the panel before
+capturing the native screenshot or exercising task creation. The
+functional test still clicks safe left-side input/button positions and
+requires the synthetic task to appear. This avoids masking a healthy
+screen and avoids treating overlay-intercepted clicks as a storage bug.
+
+Only applies to the unsigned Windows trial and its disposable CI profile;
+the web-only first stable candidate remains separate. The dependency
+audit still blocks trusted release.

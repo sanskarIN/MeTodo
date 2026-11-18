@@ -38,6 +38,10 @@ describe("Windows native runtime verification", () => {
     expect(probe).toContain("windows-native-uia-probe.ps1");
     expect(probe).toContain("PASS (Windows UI Automation fallback)");
     expect(uia).toContain("System.Windows.Automation.AutomationElement");
+    expect(uia).toContain('diagnosticBadgeInvoked');
+    expect(uia).toContain('diagnosticsPanelClosed');
+    expect(uia).toContain('EndsWith("diagnostics")');
+    expect(uia).toContain('[System.Windows.Automation.InvokePattern]::Pattern');
     expect(uia).toContain("Stay productive");
     expect(uia).toContain("homeHeaderVisible");
     expect(uia).toContain("tasksTabVisible");

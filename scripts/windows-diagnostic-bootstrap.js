@@ -6,6 +6,7 @@
   var rejections = 0;
   var panel = null;
   var badge = null;
+  var panelOpenedByUser = false;
   var sceneRepairs = 0;
   var sceneBefore = "not_checked";
   var sceneAfter = "not_checked";
@@ -17,8 +18,27 @@
     if (!el) return false;
     var r = el.getBoundingClientRect();
     var s = window.getComputedStyle(el);
-    return r.width >= 20 && r.height >= 8 && r.top < innerHeight && r.bottom > 0 &&
-      s.display !== "none" && s.visibility !== "hidden";
+    if (!(r.width >= 20 && r.height >= 8 && r.top < innerHeight &&
+          r.bottom > 0 && s.display !== "none" && s.visibility !== "hidden")) {
+      return false;
+    }
+    // In native WebView2 a heading can have a positive bounding box
+    // while a zero-height React Navigation wrapper still clips its paint.
+    // Treat that scene as missing so the diagnostic panel is shown.
+    for (var parent = el.parentElement, depth = 0;
+         parent && depth < 24; parent = parent.parentElement, depth++) {
+      var pStyle = window.getComputedStyle(parent);
+      var pRect = parent.getBoundingClientRect();
+      if (pStyle.display === "none" || pStyle.visibility === "hidden") {
+        return false;
+      }
+      if (pRect.height <= 1 && (pStyle.overflowY === "hidden" ||
+          pStyle.overflowY === "clip" || pStyle.overflow === "hidden")) {
+        return false;
+      }
+      if (parent.id === "root") break;
+    }
+    return true;
   }
   function hasContent() {
     var anchors = {
@@ -373,7 +393,9 @@
       chainButton.style.cssText += "display:block;white-space:normal;text-align:left;word-break:break-word;";
       panel.appendChild(chainButton);
       panel.appendChild(button("Reload UI (keeps tasks)", function () { location.reload(); }));
-      panel.appendChild(button("Close", function () { panel.remove(); panel = null; }));
+      panel.appendChild(button("Close", function () {
+        panel.remove(); panel = null; panelOpenedByUser = false;
+      }));
       document.body.appendChild(panel);
     }
     panel.querySelector("[data-metodo-description]").textContent = failed
@@ -388,7 +410,10 @@
   function mount() {
     if (!document.body) return;
     if (!badge) {
-      badge = button("Windows trial " + revision + " · diagnostics", function () { showPanel(false); });
+      badge = button("Windows trial " + revision + " · diagnostics", function () {
+        panelOpenedByUser = true;
+        showPanel(false);
+      });
       badge.setAttribute("data-metodo-build-badge", revision);
       badge.style.cssText += "position:fixed;right:8px;top:5px;z-index:2147483646;opacity:0.96;font-size:11px;padding:5px;";
       document.body.appendChild(badge);
@@ -428,10 +453,14 @@
     mount();
     refreshRepairedScene();
     repairCollapsedScene();
-    // This is a Windows-only unsigned diagnostic build. Show the technical
-    // state even if a DOM bounding rect incorrectly claims content is visible
-    // while an ancestor clips or overlays the screen.
-    showPanel(!hasContent());
+    // Leave a healthy screen unobstructed. The badge still opens diagnostics
+    // on demand, and an actual missing/clipped scene still opens the panel.
+    // An automatically opened panel closes when content recovers.
+    if (!hasContent()) showPanel(true);
+    else if (panel && !panelOpenedByUser) {
+      panel.remove();
+      panel = null;
+    }
   }
   function start() {
     mount();

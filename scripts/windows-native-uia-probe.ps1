@@ -24,6 +24,7 @@ $r=@{
   syntheticTaskReturnedHome=$false; syntheticTaskVisibleInTasks=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
+  diagnosticBadgeInvoked=$false; diagnosticsPanelClosed=$false
   sceneSummary="unavailable"
   chainSummary="unavailable"
 }
@@ -102,6 +103,29 @@ try {
       $buttonCondition=[System.Windows.Automation.PropertyCondition]::new(
         [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
         [System.Windows.Automation.ControlType]::Button)
+      # Healthy native screens keep the diagnostic panel collapsed. Open it
+      # through the fixed trial badge to read nonpersonal renderer metrics.
+      # Close it again before image capture and functional UI interaction.
+      $allButtons=$w.FindAll(
+        [System.Windows.Automation.TreeScope]::Descendants,$buttonCondition)
+      for($i=0;$i -lt [Math]::Min($allButtons.Count,160);$i++) {
+        $candidate=$allButtons.Item($i).Current.Name
+        if($candidate -and $candidate.StartsWith("Windows trial ") -and
+           $candidate.EndsWith("diagnostics")) {
+          $badgeInvoke=$null
+          try {
+            if($allButtons.Item($i).TryGetCurrentPattern(
+                [System.Windows.Automation.InvokePattern]::Pattern,
+                [ref]$badgeInvoke)) {
+              $badgeInvoke.Invoke()
+              $r.diagnosticBadgeInvoked=$true
+              Start-Sleep -Milliseconds 250
+            }
+          } catch { # Metrics remain optional; never mask functional results.
+          }
+          break
+        }
+      }
       $buttons=$w.FindAll([System.Windows.Automation.TreeScope]::Descendants,$buttonCondition)
       for($i=0;$i -lt [Math]::Min($buttons.Count,160);$i++) {
         $candidate=$buttons.Item($i).Current.Name
@@ -119,6 +143,30 @@ try {
         }
         if($candidate -and $candidate.StartsWith("METODO-CHAIN ")) {
           $r.chainSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,500))
+        }
+      }
+
+      if($r.diagnosticBadgeInvoked) {
+        $closeCondition=[System.Windows.Automation.AndCondition]::new(
+          [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty,"Close"),
+          [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+            [System.Windows.Automation.ControlType]::Button))
+        $closeButton=$w.FindFirst(
+          [System.Windows.Automation.TreeScope]::Descendants,$closeCondition)
+        if($null -ne $closeButton) {
+          $closeInvoke=$null
+          try {
+            if($closeButton.TryGetCurrentPattern(
+                [System.Windows.Automation.InvokePattern]::Pattern,
+                [ref]$closeInvoke)) {
+              $closeInvoke.Invoke()
+              $r.diagnosticsPanelClosed=$true
+              Start-Sleep -Milliseconds 200
+            }
+          } catch { # Native task interaction still uses safe left-side clicks.
+          }
         }
       }
 

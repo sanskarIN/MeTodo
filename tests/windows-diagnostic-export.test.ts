@@ -30,7 +30,11 @@ describe("Windows blank-screen diagnostics", () => {
     expect(bootstrap).toContain("nearest positive ancestor");
     expect(bootstrap).toContain("data-metodo-layer-summary");
     expect(bootstrap).toContain("webkitTextFillColor");
-    expect(bootstrap).toContain("showPanel(!hasContent())");
+    expect(bootstrap).toContain("if (!hasContent()) showPanel(true)");
+    expect(bootstrap).toContain("panelOpenedByUser = true");
+    expect(bootstrap).toContain("else if (panel && !panelOpenedByUser)");
+    expect(bootstrap).toContain('pRect.height <= 1');
+    expect(bootstrap).not.toContain("showPanel(!hasContent())");
     expect(bootstrap).toContain("Reload UI (keeps tasks)");
     expect(exporter).toContain('metodo-desktop-diagnostic');
     expect(exporter).toContain("listHtml(destination)");
