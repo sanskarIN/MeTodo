@@ -131,7 +131,10 @@ try {
     }
   }
   const passed = uia?.status === "PASS" && uia?.windowFound === true &&
-    uia?.homeHeaderVisible === true;
+    uia?.homeHeaderVisible === true && uia?.resizeAttempted === true &&
+    uia?.resizeWindowChanged === true && uia?.resizeHomeVisible === true &&
+    uia?.resizeTabsVisible === true && uia?.tasksScreenVisible === true &&
+    uia?.settingsScreenVisible === true && uia?.createScreenVisible === true;
   const report = "Native Windows WebView2 test: " +
     (passed ? "PASS (Windows UI Automation fallback)" : "NOT VERIFIED") + "\n" +
     "CDP: " + String(error?.message || error) + "\n" +

@@ -13,6 +13,9 @@ $r=@{
   tasksTabBottom=0; settingsTabBottom=0
   tasksScreenVisible=$false; settingsScreenVisible=$false
   homeRoundtripVisible=$false; navigationAttempted=$false
+  resizeAttempted=$false; resizeWindowChanged=$false
+  resizeHomeVisible=$false; resizeTabsVisible=$false
+  resizedWidth=0; resizedHeight=0
   createEntryVisible=$false; createScreenVisible=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
@@ -147,6 +150,8 @@ using System.Runtime.InteropServices;
 public static class MeTodoCIMouse {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern bool MoveWindow(
+    IntPtr hwnd, int x, int y, int width, int height, bool repaint);
   [DllImport("user32.dll")] public static extern void mouse_event(
     uint flags, uint x, uint y, uint data, UIntPtr extraInfo);
 }
@@ -171,6 +176,51 @@ public static class MeTodoCIMouse {
             -not $element.Current.IsOffscreen -and
             $rect.Bottom -le $workArea.Bottom)
         }
+        # Resize the actual Tauri window before checking tab navigation. This
+        # catches the collapsed-screen regression after a native size change.
+        # Only fixed public headings, tab positions, and geometry are inspected.
+        $r.resizeAttempted=$true
+        $targetWidth=[int][Math]::Min(880,[int]$bounds.Width-70)
+        $targetHeight=[int][Math]::Min(620,[int]$bounds.Height-45)
+        if($targetWidth -ge 700 -and $targetHeight -ge 590) {
+          if([MeTodoCIMouse]::MoveWindow($hwnd,[int]$bounds.Left,
+               [int]$bounds.Top,$targetWidth,$targetHeight,$true)) {
+            Start-Sleep -Milliseconds 1900
+            $w=[System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+            $resizedBounds=$w.Current.BoundingRectangle
+            $r.resizedWidth=[int]$resizedBounds.Width
+            $r.resizedHeight=[int]$resizedBounds.Height
+            $r.resizeWindowChanged=(
+              $resizedBounds.Width -le $bounds.Width-30 -and
+              $resizedBounds.Height -le $bounds.Height-20)
+            $r.resizeHomeVisible=StaticHeadingVisible "Stay productive"
+            $tasksElement=$w.FindFirst(
+              [System.Windows.Automation.TreeScope]::Descendants,
+              [System.Windows.Automation.PropertyCondition]::new(
+                [System.Windows.Automation.AutomationElement]::NameProperty,"Tasks"))
+            $settingsElement=$w.FindFirst(
+              [System.Windows.Automation.TreeScope]::Descendants,
+              [System.Windows.Automation.PropertyCondition]::new(
+                [System.Windows.Automation.AutomationElement]::NameProperty,"Settings"))
+            if($null -ne $tasksElement -and $null -ne $settingsElement) {
+              $tasksBounds=$tasksElement.Current.BoundingRectangle
+              $settingsBounds=$settingsElement.Current.BoundingRectangle
+              $r.resizeTabsVisible=(
+                $tasksBounds.Width -ge 15 -and $tasksBounds.Height -ge 8 -and
+                $settingsBounds.Width -ge 15 -and $settingsBounds.Height -ge 8 -and
+                $tasksBounds.Bottom -le $workArea.Bottom -and
+                $settingsBounds.Bottom -le $workArea.Bottom -and
+                $tasksBounds.Top -ge $workArea.Top -and
+                $settingsBounds.Top -ge $workArea.Top -and
+                -not $tasksElement.Current.IsOffscreen -and
+                -not $settingsElement.Current.IsOffscreen)
+              $bounds=$resizedBounds
+            }
+          }
+        }
+        # Never click stale tab coordinates if the resize gate failed.
+        if($r.resizeWindowChanged -and $r.resizeHomeVisible -and
+           $r.resizeTabsVisible) {
         $tasksX=[int][Math]::Round($tasksBounds.Left+$tasksBounds.Width/2)
         $settingsX=[int][Math]::Round($settingsBounds.Left+$settingsBounds.Width/2)
         $tabsY=[int][Math]::Round($tasksBounds.Top+$tasksBounds.Height/2)
@@ -204,14 +254,21 @@ public static class MeTodoCIMouse {
             }
           }
         }
+        }
       }
       if($r.windowFound -and $r.homeHeaderVisible -and
          $r.tasksTabVisible -and $r.settingsTabVisible -and
+         $r.resizeAttempted -and $r.resizeWindowChanged -and
+         $r.resizeHomeVisible -and $r.resizeTabsVisible -and
          $r.navigationAttempted -and $r.tasksScreenVisible -and
          $r.settingsScreenVisible -and $r.homeRoundtripVisible -and
          $r.createEntryVisible -and $r.createScreenVisible) {
         $r.status="PASS"
-        $r.reason="native_navigation_and_create_task_route_visible"
+        $r.reason="native_resize_navigation_and_create_task_route_visible"
+      } elseif($r.resizeAttempted -and -not (
+         $r.resizeWindowChanged -and $r.resizeHomeVisible -and
+         $r.resizeTabsVisible)) {
+        $r.reason="native_resize_not_verified"
       } elseif($r.windowFound -and $r.homeHeaderVisible -and
          $r.tasksTabVisible -and $r.settingsTabVisible -and
          $r.homeRoundtripVisible) {

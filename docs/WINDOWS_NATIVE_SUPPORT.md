@@ -119,3 +119,22 @@ The compact 980x640 Windows trial and UI Automation test passed in [run 44099409
 ## Native Create Task route smoke (2026-11-17)
 
 Windows run 44101872443 passed the real Tasks → Settings → Home mouse-click roundtrip with three visible headings, after successfully rendering Home and both bottom navigation tabs on the compact desktop. The next native CI gate clicks the existing Home `+ Create New Task` control and verifies that the `Create Task` screen is visibly accessible in the real WebView2 process. This verifies routing only: it does **not** create or persist tasks, change settings, perform backups, or claim complete Windows 11 functionality. The interaction runs solely against a disposable GitHub Actions profile and the test report includes only fixed technical booleans, never task content.
+
+
+## Native window resize regression gate (18 November 2026)
+
+The Windows UI Automation smoke now attempts a controlled native `MoveWindow`
+resize of the compiled Tauri application on the disposable GitHub Actions
+Windows profile **before** clicking Tasks, Settings, Home and Create Task.
+It records only technical booleans and window dimensions:
+`resizeAttempted`, `resizeWindowChanged`, `resizeHomeVisible`,
+`resizeTabsVisible`, `resizedWidth`, and `resizedHeight`.
+A PASS via the UI Automation fallback requires these resize checks and
+the route navigation checks to succeed. The test does not create private tasks.
+The CDP-only path still validates its own narrower renderer metrics; its
+success must not be interpreted as a completed resize/CRUD acceptance test.
+
+This remains an unsigned diagnostic build. Real Windows 11 installation,
+task CRUD, backup/restore, close/reopen persistence and offline operation
+must be checked independently. The production-dependency security audit is
+still blocking regardless of whether a diagnostic installer was uploaded.
