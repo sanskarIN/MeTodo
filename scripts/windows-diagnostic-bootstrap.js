@@ -199,10 +199,23 @@
       var header = fixedAnchor(labels[i]);
       if (!header) continue;
       var r = header.getBoundingClientRect();
-      var style = window.getComputedStyle(header);
-      if (r.width >= 20 && r.height >= 8 && r.top >= 0 &&
-          r.top < innerHeight && style.display !== "none" &&
-          style.visibility !== "hidden") return header;
+      // React Navigation may keep an inactive route's heading in the DOM.
+      // A hidden ancestor disqualifies it, even if its own box is nonzero.
+      var inactive = false;
+      for (var node = header, depth = 0;
+           node && depth < 24; node = node.parentElement, depth++) {
+        var style = window.getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" ||
+            style.visibility === "collapse" || Number(style.opacity) === 0 ||
+            node.inert === true ||
+            (node.getAttribute && node.getAttribute("aria-hidden") === "true")) {
+          inactive = true;
+          break;
+        }
+        if (node.id === "root") break;
+      }
+      if (!inactive && r.width >= 20 && r.height >= 8 && r.top >= 0 &&
+          r.top < innerHeight && r.bottom > 0) return header;
     }
     return null;
   }

@@ -73,6 +73,11 @@ describe("Windows native runtime verification", () => {
     expect(workflow).toContain("always() && steps.build_native.outcome == 'success'");
     expect(workflow).toContain("always() && steps.checksums.outcome == 'success'");
     expect(workflow).toContain("NATIVE_WEBVIEW2_SMOKE.txt");
+    expect(workflow).toContain("Security audit (blocking, after diagnostic artifact)");
+    expect(workflow).toContain("SECURITY AUDIT BLOCKED:");
+    expect(workflow.indexOf("pnpm audit --prod --audit-level high")).toBeGreaterThan(
+      workflow.indexOf("Upload trial installer without publishing")
+    );
   });
 
   it("is syntactically valid in Node", () => {
