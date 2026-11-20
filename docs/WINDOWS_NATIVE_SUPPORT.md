@@ -278,3 +278,34 @@ A clean Windows CI result verifies *CI-profile restart persistence*, **not**
 a Windows 11 owner-installed NSIS setup/reinstall, edit/delete, backup/restore,
 offline first launch, long-term durability, or production security assurance.
 The trial remains unsigned and separate from the web-only v1.0.0 release.
+
+
+## Restart regression and follow-up verification (20 November 2026)
+
+The first restart-persistence run,
+[Windows CI #44723679181](https://github.com/sanskarIN/MeTodo/actions/runs/44723679181),
+passed 72 tests (1 skipped), TypeScript, lint, PowerShell syntax, web
+geometry, and native compilation. Its first native UIA pass successfully
+created and displayed the test task, but **the fresh-process UIA did not
+verify the test task**. The restarted window, Home, Tasks tab and Tasks
+screen were all visible. The report gave
+\`synthetic_task_not_visible_after_relaunch\`; that alone does not
+distinguish a missing storage write from an offscreen task element.
+
+The test now models a real user closing MeTodo through the Windows window
+close message and waits for the original process to exit. The earlier forced
+taskkill could end WebView2 before storage data had been flushed; a forced
+crash is a *different* durability scenario from an ordinary close/reopen.
+The app is then relaunched with the unchanged profile.
+
+The follow-up probe separately reports whether the exact fixed synthetic
+task is present in the new process's UI Automation tree and whether it is
+within the current viewport. A persisted task below the scroll fold counts
+as **hydrated** even if it is not immediately onscreen. It also checks only
+two fixed public empty/error states to distinguish actual loading failures.
+No user data or browser storage contents are inspected.
+
+These are hypotheses and diagnostic improvements, **not proof that
+storage is fixed**. A new exact-source native CI run must show persisted
+task evidence. Until then, restart persistence is an unresolved release
+blocker; no native installer is ready for stable publication.
