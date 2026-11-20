@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { runInNewContext } from "node:vm";
 describe("Windows native runtime verification", () => {
   const probe = readFileSync("scripts/windows-native-webview2-smoke.mjs", "utf8");
   const workflow = readFileSync(".github/workflows/windows-native.yml", "utf8");
@@ -36,7 +37,7 @@ describe("Windows native runtime verification", () => {
   it("falls back to Windows accessibility without reading private task data", () => {
     const uia = readFileSync("scripts/windows-native-uia-probe.ps1", "utf8");
     expect(probe).toContain("windows-native-uia-probe.ps1");
-    expect(probe).toContain("PASS (Windows UI Automation fallback)");
+    expect(probe).toContain("PASS (Windows UI Automation required)");
     expect(uia).toContain("System.Windows.Automation.AutomationElement");
     expect(uia).toContain('diagnosticBadgeInvoked');
     expect(uia).toContain('diagnosticsPanelClosed');
@@ -117,6 +118,44 @@ describe("Windows native runtime verification", () => {
     expect(workflow.indexOf("pnpm audit --prod --audit-level high")).toBeGreaterThan(
       workflow.indexOf("Upload trial installer without publishing")
     );
+  });
+
+  it("cannot bypass required native UIA checks with a healthy CDP Home screen", () => {
+    expect(probe).toContain('process.env.GITHUB_ACTIONS !== "true"');
+    expect(probe).toContain("const passed = nativeUiaPasses(uia);");
+    expect(probe).toContain('cdp = { status: ready ? "PASS" : "NOT VERIFIED", metrics };');
+    expect(probe).not.toMatch(/const pass = Boolean\(metrics\?\./);
+    expect(probe.indexOf("const passed = nativeUiaPasses(uia);")).toBeGreaterThan(
+      probe.indexOf("uia = JSON.parse(json);")
+    );
+
+    // Run the actual pure release-gate predicate against synthetic CI results,
+    // rather than creating a second, weaker implementation in this test.
+    const gate = probe.match(/function nativeUiaPasses\(uia\) \{[\s\S]*?\n\}/)?.[0];
+    expect(gate).toBeTruthy();
+    const verify = (uia: unknown): boolean => Boolean(runInNewContext(
+      (gate ?? "") + "\nnativeUiaPasses(uia);", { uia },
+    ));
+    const required = [
+      "windowFound", "homeHeaderVisible", "resizeAttempted",
+      "resizeWindowChanged", "resizeHomeVisible", "resizeTabsVisible",
+      "tasksScreenVisible", "settingsScreenVisible", "createScreenVisible",
+      "syntheticTaskTyped", "syntheticTaskInputClickSafe",
+      "syntheticTaskSaveClickSafe", "syntheticTaskSaveClicked",
+      "syntheticTaskReturnedHome", "syntheticTaskVisibleInTasks",
+    ];
+    const good: Record<string, string | boolean> = {
+      status: "PASS",
+      ...Object.fromEntries(required.map(key => [key, true])),
+    };
+    expect(verify(good)).toBe(true);
+    expect(verify({ ...good, status: "NOT VERIFIED" })).toBe(false);
+    for (const missing of required) {
+      expect(verify({ ...good, [missing]: false })).toBe(false);
+      expect(verify({ ...good, [missing]: undefined })).toBe(false);
+    }
+    // A clean CDP result has no way to override failed task persistence or UIA.
+    expect(verify({ status: "NOT VERIFIED", cdp: { status: "PASS" } })).toBe(false);
   });
 
   it("is syntactically valid in Node", () => {
