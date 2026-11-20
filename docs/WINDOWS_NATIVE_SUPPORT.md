@@ -329,3 +329,29 @@ Combined with a graceful window close and fresh-process UI Automation,
 this reduces test-induced causes of apparently missing tasks. It is still
 necessary to see an actual passing native restart check at the exact
 source SHA before asserting that persistent storage survives a close.
+
+
+## Task-details edit/delete reliability (20 November 2026)
+
+The native Windows trial currently embeds the Expo web UI. Before this fix,
+two web/Tauri-visible task-management behaviors were unreliable:
+
+- The upper-right edit checkmark toggled edit mode off without invoking the
+  existing async save handler; this could silently discard unsaved edits.
+- Task deletion used a React Native \`Alert.alert\` confirmation, which is not
+  a reliable cross-platform web dialog.
+
+The task-details screen now uses its existing async save method when the
+header checkmark is pressed, trims and rejects empty task titles, and shows
+inline write errors rather than assuming a native alert works in the web
+runtime. Deletion uses an in-app, accessible confirmation modal, disables
+duplicate requests while deleting, and closes/navigates away **only after**
+the local storage deletion Promise resolves. Cancelling the dialog leaves
+the task unchanged. A failed deletion leaves the modal open for retry.
+
+\`tests/task-detail-actions.test.ts\` guards these code paths and Windows CI
+runs the test with the rest of the suite. Passing source checks alone does
+not prove installed-device edit/delete behavior: native UI Automation and
+real Windows 11 acceptance remain necessary before stable publication.
+The first stable v1.0.0 release still targets **web only** and is managed
+separately through protected PR #17.
