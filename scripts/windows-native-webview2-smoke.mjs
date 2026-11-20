@@ -97,6 +97,19 @@ function nativeUiaPasses(uia) {
     uia?.syntheticTaskVisibleInTasks === true;
 }
 
+/**
+ * A fresh process must independently observe the fixed test task that the
+ * first instance saved. Home-only success is never proof of persistence.
+ */
+function nativeRestartPasses(restart) {
+  return restart?.status === "PASS" &&
+    restart?.windowFoundAfterRestart === true &&
+    restart?.homeVisibleAfterRestart === true &&
+    restart?.tasksTabVisibleAfterRestart === true &&
+    restart?.tasksScreenVisibleAfterRestart === true &&
+    restart?.syntheticTaskPersistedAfterRestart === true;
+}
+
 let ws;
 let cdp = { status: "NOT VERIFIED", reason: "not_started" };
 let uia = { method: "Windows UI Automation", status: "NOT VERIFIED", reason: "not_run" };
@@ -174,11 +187,66 @@ try {
     uia.reason = "native_process_unavailable";
   }
 
-  const passed = nativeUiaPasses(uia);
+  // Confirm that the saved task survives an actual native process restart.
+  // Use the same Tauri/WebView2 app identity and CI profile; only the fixed
+  // synthetic label may be queried by the follow-up accessibility probe.
+  // Kill after the first UIA has observed the saved task, not before.
+  let restart = {
+    method: "Windows UI Automation restart persistence",
+    status: "NOT VERIFIED", reason: "initial_native_functional_gate_failed"
+  };
+  if (nativeUiaPasses(uia)) {
+    const initialPid = child?.pid;
+    const stopped = initialPid && spawnSync(
+      "taskkill", ["/PID", String(initialPid), "/T", "/F"],
+      { windowsHide: true, timeout: 15000, stdio: "ignore" }
+    );
+    if (stopped?.status === 0) {
+      child = undefined;
+      // Give the WebView2 browser subprocesses time to release their profile
+      // handles. Do not clear app data or create a new user-data directory.
+      await sleep(1200);
+      try {
+        child = spawn(exe, [], {
+          cwd: resolve("."), windowsHide: true, stdio: "ignore",
+          env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "" }
+        });
+        if (!child.pid || child.pid === initialPid) {
+          restart.reason = "relaunch_process_identity_not_verified";
+        } else {
+          const args = [
+            "-NoProfile", "-NonInteractive",
+            "-File", resolve("scripts/windows-native-restart-persistence.ps1"),
+            "-TargetProcessId", String(child.pid)
+          ];
+          const json = execFileSync("powershell.exe", args, {
+            encoding: "utf8", windowsHide: true, timeout: 75000,
+            maxBuffer: 128 * 1024,
+          }).trim();
+          restart = JSON.parse(json);
+        }
+      } catch (restartError) {
+        restart = {
+          method: "Windows UI Automation restart persistence",
+          status: "NOT VERIFIED",
+          reason: restartError?.code === "ETIMEDOUT"
+            ? "restart_probe_timed_out"
+            : restartError instanceof SyntaxError
+              ? "restart_probe_invalid_json"
+              : "restart_probe_failed"
+        };
+      }
+    } else {
+      restart.reason = "initial_process_shutdown_not_verified";
+    }
+  }
+
+  const passed = nativeUiaPasses(uia) && nativeRestartPasses(restart);
   const report = "Native Windows WebView2 test: " +
-    (passed ? "PASS (Windows UI Automation required)" : "NOT VERIFIED") + "\n" +
+    (passed ? "PASS (native UIA and restart persistence required)" : "NOT VERIFIED") + "\n" +
     "CDP: " + JSON.stringify(cdp) + "\n" +
-    "UIA: " + JSON.stringify(uia) + "\n";
+    "UIA: " + JSON.stringify(uia) + "\n" +
+    "RESTART: " + JSON.stringify(restart) + "\n";
   writeFileSync(output, report, "utf8");
   if (passed) console.log(report);
   else { console.error(report); process.exitCode = 1; }
