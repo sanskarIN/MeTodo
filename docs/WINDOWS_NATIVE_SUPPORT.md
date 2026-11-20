@@ -309,3 +309,23 @@ These are hypotheses and diagnostic improvements, **not proof that
 storage is fixed**. A new exact-source native CI run must show persisted
 task evidence. Until then, restart persistence is an unresolved release
 blocker; no native installer is ready for stable publication.
+
+
+## Windows WebView2 profile parity across native restarts
+
+Tauri 2 Windows configuration documents a compatibility requirement for
+WebView2 browser arguments and data directories:
+https://v2.tauri.app/reference/config/#windowconfig
+
+The original CI native smoke enabled a localhost-only DevTools browser flag
+for its first process, but cleared this environment value when relaunching.
+That was **not a controlled profile-parity test**. The CI harness now uses
+the identical browser argument string for *both* processes and never
+changes Tauri's storage directory settings during a restart check.
+The debugging listener is only used in disposable CI and is not shipped
+as a production app configuration.
+
+Combined with a graceful window close and fresh-process UI Automation,
+this reduces test-induced causes of apparently missing tasks. It is still
+necessary to see an actual passing native restart check at the exact
+source SHA before asserting that persistent storage survives a close.
