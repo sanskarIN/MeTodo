@@ -37,7 +37,7 @@ describe("Windows native runtime verification", () => {
   it("falls back to Windows accessibility without reading private task data", () => {
     const uia = readFileSync("scripts/windows-native-uia-probe.ps1", "utf8");
     expect(probe).toContain("windows-native-uia-probe.ps1");
-    expect(probe).toContain("PASS (Windows UI Automation required)");
+    expect(probe).toContain("PASS (native UIA and restart persistence required)");
     expect(uia).toContain("System.Windows.Automation.AutomationElement");
     expect(uia).toContain('diagnosticBadgeInvoked');
     expect(uia).toContain('diagnosticsPanelClosed');
@@ -122,10 +122,10 @@ describe("Windows native runtime verification", () => {
 
   it("cannot bypass required native UIA checks with a healthy CDP Home screen", () => {
     expect(probe).toContain('process.env.GITHUB_ACTIONS !== "true"');
-    expect(probe).toContain("const passed = nativeUiaPasses(uia);");
+    expect(probe).toContain("const passed = nativeUiaPasses(uia) && nativeRestartPasses(restart);");
     expect(probe).toContain('cdp = { status: ready ? "PASS" : "NOT VERIFIED", metrics };');
     expect(probe).not.toMatch(/const pass = Boolean\(metrics\?\./);
-    expect(probe.indexOf("const passed = nativeUiaPasses(uia);")).toBeGreaterThan(
+    expect(probe.indexOf("const passed = nativeUiaPasses(uia) && nativeRestartPasses(restart);")).toBeGreaterThan(
       probe.indexOf("uia = JSON.parse(json);")
     );
 
@@ -156,6 +156,44 @@ describe("Windows native runtime verification", () => {
     }
     // A clean CDP result has no way to override failed task persistence or UIA.
     expect(verify({ status: "NOT VERIFIED", cdp: { status: "PASS" } })).toBe(false);
+  });
+
+  it("requires a new native process to find the saved synthetic task after a restart", () => {
+    const second = readFileSync("scripts/windows-native-restart-persistence.ps1", "utf8");
+    expect(workflow).toContain('"scripts/windows-native-restart-persistence.ps1"');
+    expect(probe).toContain('resolve("scripts/windows-native-restart-persistence.ps1")');
+    expect(probe).toContain('"taskkill", ["/PID", String(initialPid), "/T", "/F"]');
+    expect(probe).toContain("child.pid === initialPid");
+    expect(probe).toContain("const passed = nativeUiaPasses(uia) && nativeRestartPasses(restart);");
+    expect(probe).toContain('"RESTART: " + JSON.stringify(restart)');
+    expect(second).toContain('$env:GITHUB_ACTIONS -ne "true"');
+    expect(second).toContain("Get-Process -Id $TargetProcessId");
+    expect(second).toContain('Get-CIVisibleLabel "Stay productive"');
+    expect(second).toContain('Get-CIVisibleLabel "Manage your tasks"');
+    expect(second).toContain('Get-CIVisibleLabel "MeTodo CI Smoke Task"');
+    expect(second).toContain('$r.syntheticTaskPersistedAfterRestart=$true');
+    expect(second).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|metodo_settings|Get-Content|Remove-Item/);
+
+    const gate = probe.match(/function nativeRestartPasses\(restart\) \{[\s\S]*?\n\}/)?.[0];
+    expect(gate).toBeTruthy();
+    const verify = (restart: unknown): boolean => Boolean(runInNewContext(
+      (gate ?? "") + "\nnativeRestartPasses(restart);", { restart },
+    ));
+    const required = [
+      "windowFoundAfterRestart", "homeVisibleAfterRestart",
+      "tasksTabVisibleAfterRestart", "tasksScreenVisibleAfterRestart",
+      "syntheticTaskPersistedAfterRestart"
+    ];
+    const good: Record<string, string | boolean> = {
+      status: "PASS", ...Object.fromEntries(required.map(key => [key, true]))
+    };
+    expect(verify(good)).toBe(true);
+    expect(verify({ ...good, status: "NOT VERIFIED" })).toBe(false);
+    for (const missing of required) {
+      expect(verify({ ...good, [missing]: false })).toBe(false);
+      expect(verify({ ...good, [missing]: undefined })).toBe(false);
+    }
+    expect(verify({ status: "PASS", homeVisibleAfterRestart: true })).toBe(false);
   });
 
   it("is syntactically valid in Node", () => {
