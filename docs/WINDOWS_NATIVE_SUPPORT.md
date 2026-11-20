@@ -248,3 +248,33 @@ trial is still unsigned, production dependency auditing remains mandatory,
 and real Windows 11 installation, restart persistence, edit/delete,
 backup/restore and offline-first checks must still pass before a stable
 Windows release can be considered.
+
+
+## CI native restart-persistence gate (20 November 2026)
+
+The Windows CI trial now tests **actual process restart persistence**, not only
+in-memory task creation:
+
+1. Run the existing native Windows UI Automation test in a disposable
+   GitHub Actions Windows profile. It must create the fixed synthetic
+   \`MeTodo CI Smoke Task\` via the app UI and find it on the Tasks screen.
+2. Terminate that test process and relaunch the same compiled Tauri executable
+   using the **same** WebView2 application identity/profile. Do not clear or
+   rewrite application data between launches.
+3. Run the separate CI-only \`windows-native-restart-persistence.ps1\` probe
+   attached to the **new process**. It verifies the visible Home screen,
+   real Tasks tab navigation and the one known synthetic task label.
+4. A complete native CI PASS requires **both** the initial UIA functional
+   predicate **and** the restart predicate; CDP still remains advisory.
+   Missing accessibility data, failed relaunch, or absent synthetic task
+   produce NOT VERIFIED and a failing native smoke step.
+
+The restart probe returns only fixed boolean and reason fields. It never
+enumerates other task names, reads browser storage, exports backups, or
+captures a new screenshot after the synthetic task exists. The entire
+write/relaunch test is limited to fresh disposable GitHub Actions environments.
+
+A clean Windows CI result verifies *CI-profile restart persistence*, **not**
+a Windows 11 owner-installed NSIS setup/reinstall, edit/delete, backup/restore,
+offline first launch, long-term durability, or production security assurance.
+The trial remains unsigned and separate from the web-only v1.0.0 release.
