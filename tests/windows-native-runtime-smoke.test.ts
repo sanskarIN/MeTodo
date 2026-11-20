@@ -162,6 +162,11 @@ describe("Windows native runtime verification", () => {
     const second = readFileSync("scripts/windows-native-restart-persistence.ps1", "utf8");
     expect(workflow).toContain('"scripts/windows-native-restart-persistence.ps1"');
     expect(probe).toContain('resolve("scripts/windows-native-restart-persistence.ps1")');
+    // Both native launches must open the exact same WebView2 profile settings.
+    // Do not mistake a new or incompatible profile for lost task persistence.
+    expect(probe).toContain("const ciWebviewBrowserArgs =");
+    expect(probe.match(/WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:\s*ciWebviewBrowserArgs/g)).toHaveLength(2);
+    expect(probe).not.toContain('WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: ""');
     expect(probe).toContain('$target.CloseMainWindow()');
     expect(probe).toContain('$target.WaitForExit(15000)');
     expect(probe).toContain('"graceful_window_close_not_verified"');
