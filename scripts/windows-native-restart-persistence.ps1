@@ -10,6 +10,10 @@ $r=@{
   windowFoundAfterRestart=$false; homeVisibleAfterRestart=$false
   tasksTabVisibleAfterRestart=$false; tasksScreenVisibleAfterRestart=$false
   syntheticTaskPersistedAfterRestart=$false
+  syntheticTaskFoundInTreeAfterRestart=$false
+  syntheticTaskInViewportAfterRestart=$false
+  emptyTasksMessageAfterRestart=$false
+  savedTasksErrorAfterRestart=$false
 }
 try {
   if ($env:GITHUB_ACTIONS -ne "true") {
@@ -91,13 +95,34 @@ public static class MeTodoCIRestartMouse {
             [MeTodoCIRestartMouse]::mouse_event([uint32]4,0,0,0,[UIntPtr]::Zero)
             for($i=0;$i -lt 20;$i++) {
               Start-Sleep -Milliseconds 500
+              $r.emptyTasksMessageAfterRestart=(
+                Get-CIVisibleLabel "No tasks")
+              $r.savedTasksErrorAfterRestart=(
+                Get-CIVisibleLabel "Saved tasks could not be loaded safely")
               if(Get-CIVisibleLabel "Manage your tasks") {
                 $r.tasksScreenVisibleAfterRestart=$true
-                # Only compare with a fixed, nonpersonal synthetic title.
+                # Only query the single fixed, nonpersonal synthetic title.
+                # A restored task below the fold may have IsOffscreen=true:
+                # that still proves it was hydrated in this fresh process.
                 # Never enumerate, log, export, or read other task values.
-                if(Get-CIVisibleLabel "MeTodo CI Smoke Task") {
-                  $r.syntheticTaskPersistedAfterRestart=$true
-                  break
+                $fixedCondition=[System.Windows.Automation.PropertyCondition]::new(
+                  [System.Windows.Automation.AutomationElement]::NameProperty,
+                  "MeTodo CI Smoke Task")
+                $fixed=$w.FindFirst(
+                  [System.Windows.Automation.TreeScope]::Descendants,
+                  $fixedCondition)
+                if($null -ne $fixed) {
+                  $r.syntheticTaskFoundInTreeAfterRestart=$true
+                  $fixedBounds=$fixed.Current.BoundingRectangle
+                  $r.syntheticTaskInViewportAfterRestart=(
+                    $fixedBounds.Width -ge 20 -and $fixedBounds.Height -ge 8 -and
+                    $fixedBounds.Top -ge $workArea.Top -and
+                    $fixedBounds.Bottom -le $workArea.Bottom -and
+                    -not $fixed.Current.IsOffscreen)
+                  $r.syntheticTaskPersistedAfterRestart=(
+                    $fixedBounds.Width -ge 20 -and
+                    $fixedBounds.Height -ge 8)
+                  if($r.syntheticTaskPersistedAfterRestart) { break }
                 }
               }
             }
