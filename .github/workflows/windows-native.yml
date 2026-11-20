@@ -19,6 +19,7 @@ on:
       - "tests/windows-diagnostic-export.test.ts"
       - "tests/windows-scene-lifecycle.test.ts"
       - "tests/windows-native-runtime-smoke.test.ts"
+      - "tests/task-detail-actions.test.ts"
       - "assets/images/icon.png"
       - "package.json"
       - "pnpm-lock.yaml"
