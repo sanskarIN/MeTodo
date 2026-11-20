@@ -15,6 +15,9 @@ export default function TaskDetailScreen() {
 
   const [task, setTask] = useState<Task | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [deleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [taskActionError, setTaskActionError] = useState<string | null>(null);
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [calendarAction, setCalendarAction] = useState<"link" | "sync" | "open" | "unlink" | null>(null);
   const [calendarOptions, setCalendarOptions] = useState<WritableCalendarOption[]>([]);
@@ -28,35 +31,52 @@ export default function TaskDetailScreen() {
 
   const handleSave = async () => {
     if (!editedTask) return;
-    const next = { ...editedTask, updatedAt: new Date() };
+    const title = editedTask.title.trim();
+    if (!title) {
+      setTaskActionError("Task title cannot be empty.");
+      return;
+    }
+    const next = { ...editedTask, title, updatedAt: new Date() };
+    setTaskActionError(null);
     try {
       await updateTask(next);
       setTask(next);
+      setEditedTask(next);
       setIsEditing(false);
     } catch (error) {
       console.error("Unable to save task edits:", error);
-      Alert.alert("Unable to save task", "Your edits were not saved. Please try again.");
+      setTaskActionError("Unable to save task changes. Please try again.");
     }
   };
 
+  const startEditing = () => {
+    setEditedTask(task);
+    setTaskActionError(null);
+    setIsEditing(true);
+  };
+
+  // An in-app confirmation works in the web export and the Tauri WebView2
+  // shell, unlike React Native's platform-specific Alert.alert buttons.
   const handleDelete = () => {
-    Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
-      { text: "Cancel", onPress: () => {} },
-      {
-        text: "Delete",
-        onPress: async () => {
-          if (task) {
-            try {
-              await deleteTask(task.id);
-              router.back();
-            } catch (error) {
-              console.error("Unable to delete task:", error);
-              Alert.alert("Unable to delete task", "The task was not deleted. Please try again.");
-            }
-          }
-        },
-      },
-    ]);
+    if (!task) return;
+    setTaskActionError(null);
+    setDeleteConfirmationVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!task || isDeleting) return;
+    setIsDeleting(true);
+    setTaskActionError(null);
+    try {
+      await deleteTask(task.id);
+      setDeleteConfirmationVisible(false);
+      router.back();
+    } catch (error) {
+      console.error("Unable to delete task:", error);
+      setTaskActionError("Unable to delete task. Your task was not deleted; please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleToggleComplete = async () => {
@@ -218,7 +238,11 @@ export default function TaskDetailScreen() {
             <Text className="text-2xl">←</Text>
           </Pressable>
           <Text className="text-2xl font-bold text-foreground">Task Details</Text>
-          <Pressable onPress={() => setIsEditing(!isEditing)}>
+          <Pressable
+            onPress={() => { if (isEditing) { void handleSave(); } else { startEditing(); } }}
+            accessibilityRole="button"
+            accessibilityLabel={isEditing ? "Save task changes" : "Edit task"}
+          >
             <Text className="text-2xl">{isEditing ? "✓" : "✎"}</Text>
           </Pressable>
         </View>
@@ -482,10 +506,17 @@ export default function TaskDetailScreen() {
 
         {/* Action Buttons */}
         <View className="px-4 pb-6 gap-3">
+          {taskActionError && (
+            <Text accessibilityRole="alert" style={{ color: colors.error }}>
+              {taskActionError}
+            </Text>
+          )}
           {isEditing ? (
             <>
               <TouchableOpacity
                 onPress={handleSave}
+                accessibilityRole="button"
+                accessibilityLabel="Save task changes"
                 style={{ backgroundColor: colors.primary }}
                 className="rounded-2xl py-4 items-center active:opacity-80"
               >
@@ -495,6 +526,7 @@ export default function TaskDetailScreen() {
                 onPress={() => {
                   setIsEditing(false);
                   setEditedTask(task);
+                  setTaskActionError(null);
                 }}
                 style={{ backgroundColor: colors.surface }}
                 className="rounded-2xl py-4 items-center active:opacity-80"
@@ -505,7 +537,9 @@ export default function TaskDetailScreen() {
           ) : (
             <>
               <TouchableOpacity
-                onPress={() => setIsEditing(true)}
+                onPress={startEditing}
+                accessibilityRole="button"
+                accessibilityLabel="Edit task"
                 style={{ backgroundColor: colors.primary }}
                 className="rounded-2xl py-4 items-center active:opacity-80"
               >
@@ -513,6 +547,8 @@ export default function TaskDetailScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleDelete}
+                accessibilityRole="button"
+                accessibilityLabel="Delete task"
                 style={{ backgroundColor: colors.error }}
                 className="rounded-2xl py-4 items-center active:opacity-80"
               >
@@ -522,6 +558,48 @@ export default function TaskDetailScreen() {
           )}
         </View>
       </ScrollView>
+      <Modal
+        visible={deleteConfirmationVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { if (!isDeleting) setDeleteConfirmationVisible(false); }}
+      >
+        <View className="flex-1 justify-center px-5" style={{ backgroundColor: "rgba(0, 0, 0, 0.55)" }}>
+          <View className="rounded-2xl p-5 gap-4" style={{ backgroundColor: colors.surface }}>
+            <Text className="text-xl font-bold" style={{ color: colors.foreground }}>
+              Delete Task
+            </Text>
+            <Text style={{ color: colors.foreground }}>
+              Delete this task permanently? This cannot be undone.
+            </Text>
+            {taskActionError && <Text accessibilityRole="alert" style={{ color: colors.error }}>{taskActionError}</Text>}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Cancel task deletion"
+                disabled={isDeleting}
+                onPress={() => { setDeleteConfirmationVisible(false); setTaskActionError(null); }}
+                className="flex-1 rounded-xl py-3 items-center"
+                style={{ backgroundColor: colors.background, opacity: isDeleting ? 0.5 : 1 }}
+              >
+                <Text style={{ color: colors.foreground }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Confirm delete task"
+                disabled={isDeleting}
+                onPress={() => { void confirmDelete(); }}
+                className="flex-1 rounded-xl py-3 items-center"
+                style={{ backgroundColor: colors.error, opacity: isDeleting ? 0.5 : 1 }}
+              >
+                <Text className="text-white font-semibold">
+                  {isDeleting ? "Deleting…" : "Delete"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }

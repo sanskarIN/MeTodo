@@ -6,6 +6,7 @@
   var rejections = 0;
   var panel = null;
   var badge = null;
+  var panelOpenedByUser = false;
   var sceneRepairs = 0;
   var sceneBefore = "not_checked";
   var sceneAfter = "not_checked";
@@ -17,8 +18,27 @@
     if (!el) return false;
     var r = el.getBoundingClientRect();
     var s = window.getComputedStyle(el);
-    return r.width >= 20 && r.height >= 8 && r.top < innerHeight && r.bottom > 0 &&
-      s.display !== "none" && s.visibility !== "hidden";
+    if (!(r.width >= 20 && r.height >= 8 && r.top < innerHeight &&
+          r.bottom > 0 && s.display !== "none" && s.visibility !== "hidden")) {
+      return false;
+    }
+    // In native WebView2 a heading can have a positive bounding box
+    // while a zero-height React Navigation wrapper still clips its paint.
+    // Treat that scene as missing so the diagnostic panel is shown.
+    for (var parent = el.parentElement, depth = 0;
+         parent && depth < 24; parent = parent.parentElement, depth++) {
+      var pStyle = window.getComputedStyle(parent);
+      var pRect = parent.getBoundingClientRect();
+      if (pStyle.display === "none" || pStyle.visibility === "hidden") {
+        return false;
+      }
+      if (pRect.height <= 1 && (pStyle.overflowY === "hidden" ||
+          pStyle.overflowY === "clip" || pStyle.overflow === "hidden")) {
+        return false;
+      }
+      if (parent.id === "root") break;
+    }
+    return true;
   }
   function hasContent() {
     var anchors = {
@@ -190,8 +210,57 @@
     }
     return "METODO-CHAIN " + parts.join("|");
   }
+  // Only fixed screen headings are eligible for scene recovery. The page may
+  // keep inactive routes mounted, so reject offscreen/hidden headings.
+  function currentSceneAnchor() {
+    var labels = ["Stay productive", "Manage your tasks",
+      "Customize your experience", "Create Task"];
+    for (var i = 0; i < labels.length; i++) {
+      var header = fixedAnchor(labels[i]);
+      if (!header) continue;
+      var r = header.getBoundingClientRect();
+      // React Navigation may keep an inactive route's heading in the DOM.
+      // A hidden ancestor disqualifies it, even if its own box is nonzero.
+      var inactive = false;
+      for (var node = header, depth = 0;
+           node && depth < 24; node = node.parentElement, depth++) {
+        var style = window.getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" ||
+            style.visibility === "collapse" || Number(style.opacity) === 0 ||
+            node.inert === true ||
+            (node.getAttribute && node.getAttribute("aria-hidden") === "true")) {
+          inactive = true;
+          break;
+        }
+        if (node.id === "root") break;
+      }
+      if (!inactive && r.width >= 20 && r.height >= 8 && r.top >= 0 &&
+          r.top < innerHeight && r.bottom > 0) return header;
+    }
+    return null;
+  }
+  // Fixed pixel heights from a previous repair must follow subsequent window
+  // resizing. Ignore repaired parents when finding available viewport space.
+  function refreshRepairedScene() {
+    var repaired = document.querySelectorAll('[data-metodo-repaired-scene="true"]');
+    for (var i = 0; i < repaired.length; i++) {
+      var node = repaired[i];
+      for (var parent = node.parentElement, d = 0;
+           parent && d < 18; parent = parent.parentElement, d++) {
+        if (parent.hasAttribute("data-metodo-repaired-scene")) continue;
+        var bounds = parent.getBoundingClientRect();
+        if (bounds.width < 250 || bounds.height < 250) continue;
+        var available = Math.floor(Math.min(bounds.height, innerHeight));
+        if (node.style.height !== available + "px") {
+          node.style.setProperty("min-height", available + "px", "important");
+          node.style.setProperty("height", available + "px", "important");
+        }
+        break;
+      }
+    }
+  }
   function repairCollapsedScene() {
-    var header = fixedAnchor("Stay productive");
+    var header = currentSceneAnchor();
     if (!header) {
       sceneBefore = "heading_absent";
       return;
@@ -324,7 +393,9 @@
       chainButton.style.cssText += "display:block;white-space:normal;text-align:left;word-break:break-word;";
       panel.appendChild(chainButton);
       panel.appendChild(button("Reload UI (keeps tasks)", function () { location.reload(); }));
-      panel.appendChild(button("Close", function () { panel.remove(); panel = null; }));
+      panel.appendChild(button("Close", function () {
+        panel.remove(); panel = null; panelOpenedByUser = false;
+      }));
       document.body.appendChild(panel);
     }
     panel.querySelector("[data-metodo-description]").textContent = failed
@@ -339,22 +410,61 @@
   function mount() {
     if (!document.body) return;
     if (!badge) {
-      badge = button("Windows trial " + revision + " · diagnostics", function () { showPanel(false); });
+      badge = button("Windows trial " + revision + " · diagnostics", function () {
+        panelOpenedByUser = true;
+        showPanel(false);
+      });
       badge.setAttribute("data-metodo-build-badge", revision);
       badge.style.cssText += "position:fixed;right:8px;top:5px;z-index:2147483646;opacity:0.96;font-size:11px;padding:5px;";
       document.body.appendChild(badge);
     }
   }
+  // React Navigation can replace entire scenes long after the first minute.
+  // Coalesce mutations so repair work never runs in every DOM mutation callback.
+  function subscribeSceneRecovery() {
+    var root = document.getElementById("root");
+    if (!root) {
+      setTimeout(subscribeSceneRecovery, 250);
+      return;
+    }
+    var queued = false;
+    function queueSceneRecovery() {
+      if (queued) return;
+      queued = true;
+      setTimeout(function () {
+        queued = false;
+        refreshRepairedScene();
+        repairCollapsedScene();
+      }, 120);
+    }
+    if (typeof MutationObserver === "function") {
+      new MutationObserver(queueSceneRecovery).observe(root, {
+        subtree: true, childList: true
+      });
+    }
+    window.addEventListener("resize", queueSceneRecovery);
+    window.addEventListener("pageshow", queueSceneRecovery);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) queueSceneRecovery();
+    });
+    queueSceneRecovery();
+  }
   function check() {
     mount();
+    refreshRepairedScene();
     repairCollapsedScene();
-    // This is a Windows-only unsigned diagnostic build. Show the technical
-    // state even if a DOM bounding rect incorrectly claims content is visible
-    // while an ancestor clips or overlays the screen.
-    showPanel(!hasContent());
+    // Leave a healthy screen unobstructed. The badge still opens diagnostics
+    // on demand, and an actual missing/clipped scene still opens the panel.
+    // An automatically opened panel closes when content recovers.
+    if (!hasContent()) showPanel(true);
+    else if (panel && !panelOpenedByUser) {
+      panel.remove();
+      panel = null;
+    }
   }
   function start() {
     mount();
+    subscribeSceneRecovery();
     setTimeout(check, 3000);
     setTimeout(check, 10000);
     setTimeout(check, 18000);

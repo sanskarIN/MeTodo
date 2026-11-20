@@ -119,3 +119,239 @@ The compact 980x640 Windows trial and UI Automation test passed in [run 44099409
 ## Native Create Task route smoke (2026-11-17)
 
 Windows run 44101872443 passed the real Tasks → Settings → Home mouse-click roundtrip with three visible headings, after successfully rendering Home and both bottom navigation tabs on the compact desktop. The next native CI gate clicks the existing Home `+ Create New Task` control and verifies that the `Create Task` screen is visibly accessible in the real WebView2 process. This verifies routing only: it does **not** create or persist tasks, change settings, perform backups, or claim complete Windows 11 functionality. The interaction runs solely against a disposable GitHub Actions profile and the test report includes only fixed technical booleans, never task content.
+
+
+## Native window resize regression gate (18 November 2026)
+
+The Windows UI Automation smoke now attempts a controlled native `MoveWindow`
+resize of the compiled Tauri application on the disposable GitHub Actions
+Windows profile **before** clicking Tasks, Settings, Home and Create Task.
+It records only technical booleans and window dimensions:
+`resizeAttempted`, `resizeWindowChanged`, `resizeHomeVisible`,
+`resizeTabsVisible`, `resizedWidth`, and `resizedHeight`.
+A PASS requires Windows UI Automation to verify resize, route
+navigation, and fixed synthetic task creation. The optional CDP renderer
+geometry check is advisory only: even if CDP reports a healthy Home heading,
+it cannot bypass the UI Automation functional gate. The synthetic task is
+created only in the disposable CI profile, not in any user's own data.
+
+This remains an unsigned diagnostic build. Real Windows 11 installation,
+task CRUD, backup/restore, close/reopen persistence and offline operation
+must be checked independently. The production-dependency security audit is
+still blocking regardless of whether a diagnostic installer was uploaded.
+
+
+## Native synthetic task creation gate (18 November 2026)
+
+After verifying the native Windows resize and route navigation, GitHub Actions
+uses a **disposable CI-only WebView2 profile** to enter the fixed, nonpersonal
+title `MeTodo CI Smoke Task` into the task title field and click the accessible
+Save new task button. It checks that the app returns Home and that the
+synthetic task is visible on the Tasks screen. No task names are copied into
+CI reports; the result is recorded as fixed boolean fields. This is an
+actual UI-to-persistence-write smoke, but it does not yet prove durability
+after process restart, backup/restore, or the full CRUD sequence.
+
+The probe is gated by `GITHUB_ACTIONS=true`; do not run it against a user's
+existing profile. The native screenshot is captured **before** synthetic task
+creation and never captures user data. The Windows trial remains unsigned and
+the production audit remains a blocking failure until fixed upstream.
+
+
+## Native UI Automation timeout and sanitized phases (18 November 2026)
+
+The first synthetic task write attempt in run
+[44290972595](https://github.com/sanskarIN/MeTodo/actions/runs/44290972595)
+compiled an unsigned Windows installer and passed 70 tests (1 skipped),
+but native smoke returned `uia_probe_unavailable`. The Node process still
+allowed only 30 seconds for the Windows UI Automation subprocess, despite
+its expanded resize, navigation, and task-save exercise. This may have
+terminated the probe before it could return a result; it is not proof
+that task saving failed.
+
+The subprocess now has a 180-second timeout, and the native probe reports
+fixed technical phases (native_window_found, resize_window,
+navigation_after_resize, create_route, synthetic_title,
+synthetic_save_button, synthetic_save_result, complete).
+Node reports a fixed timeout, invalid JSON, or script-failure category,
+without returning PowerShell stdout/stderr, local paths or user data.
+
+A new exact-commit Windows CI run is required to confirm the write flow.
+Unsigned builds and the known dependency audit failure are not release ready.
+
+
+## Synthetic task smoke: prevent diagnostic overlay intercepting clicks
+
+The expanded UIA smoke in
+[run 44295626294](https://github.com/sanskarIN/MeTodo/actions/runs/44295626294)
+reached the synthetic save stage: the input and save button were discoverable,
+but returning Home was not observed. This is not sufficient evidence that
+storage failed. The native diagnostic overlay sits in the top-right of the
+trial window and can intercept center-of-control clicks on wide React Native
+form fields.
+
+The fixed Windows UIA probe clicks a point inside the **left side** of both
+the title input and the Save button, asserts those coordinates are outside
+the right diagnostic panel, and compares any available accessibility
+ValuePattern with the single fixed CI title (emits a boolean only). It
+polls for Home after a Save click to avoid mistaking slower async writes
+for failure. The Tasks screen still must display the fixed synthetic title;
+the smoke cannot pass merely because an input event or click was sent.
+
+No production task data is read, no real profile is used, and the build
+remains an unsigned diagnostic trial. The security audit is still blocking.
+
+
+## Nonblocking diagnostic overlay (18 November 2026)
+
+Native Windows trial checks previously called `showPanel(!hasContent())`
+on every startup diagnostic tick. Because `showPanel(false)` still creates
+the large top-right overlay, it could cover normal form controls in an
+otherwise healthy app. The trial now **only auto-opens** that overlay for
+a genuinely missing screen, including the previously diagnosed case
+where a heading has nonzero dimensions but a zero-height ancestor clips it.
+Once such a screen recovers, its auto-opened panel closes. Users can still
+open it explicitly using the small Windows trial diagnostics badge; an
+explicitly opened panel remains until the user closes it.
+
+The Windows UIA probe opens the badge just long enough to read fixed
+nonpersonal `METODO-*` diagnostic buttons and closes the panel before
+capturing the native screenshot or exercising task creation. The
+functional test still clicks safe left-side input/button positions and
+requires the synthetic task to appear. This avoids masking a healthy
+screen and avoids treating overlay-intercepted clicks as a storage bug.
+
+Only applies to the unsigned Windows trial and its disposable CI profile;
+the web-only first stable candidate remains separate. The dependency
+audit still blocks trusted release.
+
+
+## Required native functional gate (20 November 2026)
+
+Previously, the Node smoke script accepted a successful WebView2 DevTools
+(CDP) Home geometry check as a complete PASS and **skipped** the more
+comprehensive PowerShell UI Automation probe. This created a false-green
+path: Home could render while Tasks navigation, resizing or synthetic
+task creation was broken.
+
+The native trial now always performs the fixed, CI-only UIA interaction
+**even when CDP succeeds**. The sole green gate requires real window
+visibility, resize, Home/Tasks/Settings navigation, Create Task access,
+synthetic title entry, save click, navigation back and task visibility.
+A missing or false UIA signal results in NOT VERIFIED and a nonzero exit.
+CDP remains useful, sanitized *supplementary* evidence, never a bypass.
+A regression test evaluates the production pass predicate against missing
+and false signal values. No user tasks are read or included in diagnostic logs.
+
+This closes an evidence gap, not all Windows release blockers. The native
+trial is still unsigned, production dependency auditing remains mandatory,
+and real Windows 11 installation, restart persistence, edit/delete,
+backup/restore and offline-first checks must still pass before a stable
+Windows release can be considered.
+
+
+## CI native restart-persistence gate (20 November 2026)
+
+The Windows CI trial now tests **actual process restart persistence**, not only
+in-memory task creation:
+
+1. Run the existing native Windows UI Automation test in a disposable
+   GitHub Actions Windows profile. It must create the fixed synthetic
+   \`MeTodo CI Smoke Task\` via the app UI and find it on the Tasks screen.
+2. Terminate that test process and relaunch the same compiled Tauri executable
+   using the **same** WebView2 application identity/profile. Do not clear or
+   rewrite application data between launches.
+3. Run the separate CI-only \`windows-native-restart-persistence.ps1\` probe
+   attached to the **new process**. It verifies the visible Home screen,
+   real Tasks tab navigation and the one known synthetic task label.
+4. A complete native CI PASS requires **both** the initial UIA functional
+   predicate **and** the restart predicate; CDP still remains advisory.
+   Missing accessibility data, failed relaunch, or absent synthetic task
+   produce NOT VERIFIED and a failing native smoke step.
+
+The restart probe returns only fixed boolean and reason fields. It never
+enumerates other task names, reads browser storage, exports backups, or
+captures a new screenshot after the synthetic task exists. The entire
+write/relaunch test is limited to fresh disposable GitHub Actions environments.
+
+A clean Windows CI result verifies *CI-profile restart persistence*, **not**
+a Windows 11 owner-installed NSIS setup/reinstall, edit/delete, backup/restore,
+offline first launch, long-term durability, or production security assurance.
+The trial remains unsigned and separate from the web-only v1.0.0 release.
+
+
+## Restart regression and follow-up verification (20 November 2026)
+
+The first restart-persistence run,
+[Windows CI #44723679181](https://github.com/sanskarIN/MeTodo/actions/runs/44723679181),
+passed 72 tests (1 skipped), TypeScript, lint, PowerShell syntax, web
+geometry, and native compilation. Its first native UIA pass successfully
+created and displayed the test task, but **the fresh-process UIA did not
+verify the test task**. The restarted window, Home, Tasks tab and Tasks
+screen were all visible. The report gave
+\`synthetic_task_not_visible_after_relaunch\`; that alone does not
+distinguish a missing storage write from an offscreen task element.
+
+The test now models a real user closing MeTodo through the Windows window
+close message and waits for the original process to exit. The earlier forced
+taskkill could end WebView2 before storage data had been flushed; a forced
+crash is a *different* durability scenario from an ordinary close/reopen.
+The app is then relaunched with the unchanged profile.
+
+The follow-up probe separately reports whether the exact fixed synthetic
+task is present in the new process's UI Automation tree and whether it is
+within the current viewport. A persisted task below the scroll fold counts
+as **hydrated** even if it is not immediately onscreen. It also checks only
+two fixed public empty/error states to distinguish actual loading failures.
+No user data or browser storage contents are inspected.
+
+These are hypotheses and diagnostic improvements, **not proof that
+storage is fixed**. A new exact-source native CI run must show persisted
+task evidence. Until then, restart persistence is an unresolved release
+blocker; no native installer is ready for stable publication.
+
+
+## Windows WebView2 profile parity across native restarts
+
+Tauri 2 Windows configuration documents a compatibility requirement for
+WebView2 browser arguments and data directories:
+https://v2.tauri.app/reference/config/#windowconfig
+
+The original CI native smoke enabled a localhost-only DevTools browser flag
+for its first process, but cleared this environment value when relaunching.
+That was **not a controlled profile-parity test**. The CI harness now uses
+the identical browser argument string for *both* processes and never
+changes Tauri's storage directory settings during a restart check.
+The debugging listener is only used in disposable CI and is not shipped
+as a production app configuration.
+
+Combined with a graceful window close and fresh-process UI Automation,
+this reduces test-induced causes of apparently missing tasks. It is still
+necessary to see an actual passing native restart check at the exact
+source SHA before asserting that persistent storage survives a close.
+
+
+## Task-details edit/delete reliability (20 November 2026)
+
+The native Windows trial currently embeds the Expo web UI. Before this fix,
+two web/Tauri-visible task-management behaviors were unreliable:
+
+- The upper-right edit checkmark toggled edit mode off without invoking the
+  existing async save handler; this could silently discard unsaved edits.
+- Task deletion used a React Native \`Alert.alert\` confirmation, which is not
+  a reliable cross-platform web dialog.
+
+The task-details screen now uses its existing async save method when the
+header checkmark is pressed, trims and rejects empty task titles, and shows
+inline write errors rather than assuming a native alert works in the web
+runtime. Deletion uses an in-app, accessible confirmation modal, disables
+duplicate requests while deleting, and closes/navigates away **only after**
+the local storage deletion Promise resolves. Cancelling the dialog leaves
+the task unchanged. A failed deletion leaves the modal open for retry.
+
+\`tests/task-detail-actions.test.ts\` guards these code paths and Windows CI
+runs the test with the rest of the suite. Passing source checks alone does
+not prove installed-device edit/delete behavior: native UI Automation and
+real Windows 11 acceptance remain necessary before stable publication.
+The first stable v1.0.0 release still targets **web only** and is managed
+separately through protected PR #17.

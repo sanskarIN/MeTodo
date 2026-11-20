@@ -6,16 +6,25 @@ param(
 )
 $ErrorActionPreference="Stop"
 $r=@{
-  method="Windows UI Automation"; status="NOT VERIFIED"
+  method="Windows UI Automation"; status="NOT VERIFIED"; phase="initializing"
   windowFound=$false; homeHeaderVisible=$false
   homeTabFound=$false; tasksTabFound=$false; settingsTabFound=$false
   tasksTabVisible=$false; settingsTabVisible=$false; desktopWorkAreaBottom=0
   tasksTabBottom=0; settingsTabBottom=0
   tasksScreenVisible=$false; settingsScreenVisible=$false
   homeRoundtripVisible=$false; navigationAttempted=$false
+  resizeAttempted=$false; resizeWindowChanged=$false
+  resizeHomeVisible=$false; resizeTabsVisible=$false
+  resizedWidth=0; resizedHeight=0
   createEntryVisible=$false; createScreenVisible=$false
+  syntheticTaskInputFound=$false; syntheticTaskTyped=$false
+  syntheticTaskInputValueAvailable=$false; syntheticTaskInputValueMatched=$false
+  syntheticTaskInputClickSafe=$false; syntheticTaskSaveClickSafe=$false
+  syntheticTaskSaveFound=$false; syntheticTaskSaveClicked=$false
+  syntheticTaskReturnedHome=$false; syntheticTaskVisibleInTasks=$false
   documentControlPresent=$false; windowWidth=0; windowHeight=0
   snapshot="not_requested"; reason="unknown"; paintSummary="unavailable"; layerSummary="unavailable"
+  diagnosticBadgeInvoked=$false; diagnosticsPanelClosed=$false
   sceneSummary="unavailable"
   chainSummary="unavailable"
 }
@@ -39,6 +48,7 @@ try {
     } else {
       $bounds=$w.Current.BoundingRectangle
       $r.windowFound=($bounds.Width -ge 300 -and $bounds.Height -ge 200)
+      $r.phase="native_window_found"
       $r.windowWidth=[int]$bounds.Width
       $r.windowHeight=[int]$bounds.Height
       $r.homeTabFound=($null -ne $w.FindFirst(
@@ -93,6 +103,29 @@ try {
       $buttonCondition=[System.Windows.Automation.PropertyCondition]::new(
         [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
         [System.Windows.Automation.ControlType]::Button)
+      # Healthy native screens keep the diagnostic panel collapsed. Open it
+      # through the fixed trial badge to read nonpersonal renderer metrics.
+      # Close it again before image capture and functional UI interaction.
+      $allButtons=$w.FindAll(
+        [System.Windows.Automation.TreeScope]::Descendants,$buttonCondition)
+      for($i=0;$i -lt [Math]::Min($allButtons.Count,160);$i++) {
+        $candidate=$allButtons.Item($i).Current.Name
+        if($candidate -and $candidate.StartsWith("Windows trial ") -and
+           $candidate.EndsWith("diagnostics")) {
+          $badgeInvoke=$null
+          try {
+            if($allButtons.Item($i).TryGetCurrentPattern(
+                [System.Windows.Automation.InvokePattern]::Pattern,
+                [ref]$badgeInvoke)) {
+              $badgeInvoke.Invoke()
+              $r.diagnosticBadgeInvoked=$true
+              Start-Sleep -Milliseconds 250
+            }
+          } catch { # Metrics remain optional; never mask functional results.
+          }
+          break
+        }
+      }
       $buttons=$w.FindAll([System.Windows.Automation.TreeScope]::Descendants,$buttonCondition)
       for($i=0;$i -lt [Math]::Min($buttons.Count,160);$i++) {
         $candidate=$buttons.Item($i).Current.Name
@@ -110,6 +143,30 @@ try {
         }
         if($candidate -and $candidate.StartsWith("METODO-CHAIN ")) {
           $r.chainSummary=$candidate.Substring(0,[Math]::Min($candidate.Length,500))
+        }
+      }
+
+      if($r.diagnosticBadgeInvoked) {
+        $closeCondition=[System.Windows.Automation.AndCondition]::new(
+          [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty,"Close"),
+          [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+            [System.Windows.Automation.ControlType]::Button))
+        $closeButton=$w.FindFirst(
+          [System.Windows.Automation.TreeScope]::Descendants,$closeCondition)
+        if($null -ne $closeButton) {
+          $closeInvoke=$null
+          try {
+            if($closeButton.TryGetCurrentPattern(
+                [System.Windows.Automation.InvokePattern]::Pattern,
+                [ref]$closeInvoke)) {
+              $closeInvoke.Invoke()
+              $r.diagnosticsPanelClosed=$true
+              Start-Sleep -Milliseconds 200
+            }
+          } catch { # Native task interaction still uses safe left-side clicks.
+          }
         }
       }
 
@@ -147,6 +204,8 @@ using System.Runtime.InteropServices;
 public static class MeTodoCIMouse {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern bool MoveWindow(
+    IntPtr hwnd, int x, int y, int width, int height, bool repaint);
   [DllImport("user32.dll")] public static extern void mouse_event(
     uint flags, uint x, uint y, uint data, UIntPtr extraInfo);
 }
@@ -171,6 +230,53 @@ public static class MeTodoCIMouse {
             -not $element.Current.IsOffscreen -and
             $rect.Bottom -le $workArea.Bottom)
         }
+        # Resize the actual Tauri window before checking tab navigation. This
+        # catches the collapsed-screen regression after a native size change.
+        # Only fixed public headings, tab positions, and geometry are inspected.
+        $r.phase="resize_window"
+        $r.resizeAttempted=$true
+        $targetWidth=[int][Math]::Min(880,[int]$bounds.Width-70)
+        $targetHeight=[int][Math]::Min(620,[int]$bounds.Height-45)
+        if($targetWidth -ge 700 -and $targetHeight -ge 590) {
+          if([MeTodoCIMouse]::MoveWindow($hwnd,[int]$bounds.Left,
+               [int]$bounds.Top,$targetWidth,$targetHeight,$true)) {
+            Start-Sleep -Milliseconds 1900
+            $w=[System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+            $resizedBounds=$w.Current.BoundingRectangle
+            $r.resizedWidth=[int]$resizedBounds.Width
+            $r.resizedHeight=[int]$resizedBounds.Height
+            $r.resizeWindowChanged=(
+              $resizedBounds.Width -le $bounds.Width-30 -and
+              $resizedBounds.Height -le $bounds.Height-20)
+            $r.resizeHomeVisible=StaticHeadingVisible "Stay productive"
+            $tasksElement=$w.FindFirst(
+              [System.Windows.Automation.TreeScope]::Descendants,
+              [System.Windows.Automation.PropertyCondition]::new(
+                [System.Windows.Automation.AutomationElement]::NameProperty,"Tasks"))
+            $settingsElement=$w.FindFirst(
+              [System.Windows.Automation.TreeScope]::Descendants,
+              [System.Windows.Automation.PropertyCondition]::new(
+                [System.Windows.Automation.AutomationElement]::NameProperty,"Settings"))
+            if($null -ne $tasksElement -and $null -ne $settingsElement) {
+              $tasksBounds=$tasksElement.Current.BoundingRectangle
+              $settingsBounds=$settingsElement.Current.BoundingRectangle
+              $r.resizeTabsVisible=(
+                $tasksBounds.Width -ge 15 -and $tasksBounds.Height -ge 8 -and
+                $settingsBounds.Width -ge 15 -and $settingsBounds.Height -ge 8 -and
+                $tasksBounds.Bottom -le $workArea.Bottom -and
+                $settingsBounds.Bottom -le $workArea.Bottom -and
+                $tasksBounds.Top -ge $workArea.Top -and
+                $settingsBounds.Top -ge $workArea.Top -and
+                -not $tasksElement.Current.IsOffscreen -and
+                -not $settingsElement.Current.IsOffscreen)
+              $bounds=$resizedBounds
+            }
+          }
+        }
+        # Never click stale tab coordinates if the resize gate failed.
+        if($r.resizeWindowChanged -and $r.resizeHomeVisible -and
+           $r.resizeTabsVisible) {
+        $r.phase="navigation_after_resize"
         $tasksX=[int][Math]::Round($tasksBounds.Left+$tasksBounds.Width/2)
         $settingsX=[int][Math]::Round($settingsBounds.Left+$settingsBounds.Width/2)
         $tabsY=[int][Math]::Round($tasksBounds.Top+$tasksBounds.Height/2)
@@ -201,17 +307,164 @@ public static class MeTodoCIMouse {
                 $createBounds.Top+$createBounds.Height/2)
               Click-CITab $createX $createY
               $r.createScreenVisible=StaticHeadingVisible "Create Task"
+              $r.phase="create_route"
+              # Synthetic, fixed-content functional test in the disposable
+              # GitHub Actions profile ONLY. Never enumerate task titles or
+              # touch user backup files, storage keys, or task data.
+              if($r.createScreenVisible) {
+                $r.phase="synthetic_title"
+                $ciTitle="MeTodo CI Smoke Task"
+                $inputCondition=[System.Windows.Automation.AndCondition]::new(
+                  [System.Windows.Automation.PropertyCondition]::new(
+                    [System.Windows.Automation.AutomationElement]::NameProperty,
+                    "Task title"),
+                  [System.Windows.Automation.PropertyCondition]::new(
+                    [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                    [System.Windows.Automation.ControlType]::Edit))
+                $ciInput=$w.FindFirst(
+                  [System.Windows.Automation.TreeScope]::Descendants,$inputCondition)
+                if($null -ne $ciInput) {
+                  $inputBounds=$ciInput.Current.BoundingRectangle
+                  $r.syntheticTaskInputFound=(
+                    $inputBounds.Width -ge 100 -and
+                    $inputBounds.Height -ge 20 -and
+                    -not $ciInput.Current.IsOffscreen)
+                  if($r.syntheticTaskInputFound) {
+                    # A trial diagnostic panel occupies the top-right of the
+                    # window. Center clicks on wide inputs can hit that panel
+                    # instead of the underlying React Native text field.
+                    # Target the left interior, never the panel side.
+                    $inputX=[int][Math]::Round(
+                      $inputBounds.Left+[Math]::Min(24,$inputBounds.Width/8))
+                    $inputY=[int][Math]::Round(
+                      $inputBounds.Top+$inputBounds.Height/2)
+                    $r.syntheticTaskInputClickSafe=(
+                      $inputX -lt ($bounds.Right-465))
+                    if($r.syntheticTaskInputClickSafe) {
+                      Click-CITab $inputX $inputY
+                      [System.Windows.Forms.SendKeys]::SendWait($ciTitle)
+                      Start-Sleep -Milliseconds 650
+                      $valuePattern=$null
+                      if($ciInput.TryGetCurrentPattern(
+                          [System.Windows.Automation.ValuePattern]::Pattern,
+                          [ref]$valuePattern)) {
+                        $r.syntheticTaskInputValueAvailable=$true
+                        # Do not emit the input's contents; only compare the
+                        # value against the fixed disposable CI test string.
+                        $r.syntheticTaskInputValueMatched=(
+                          $valuePattern.Current.Value -ceq $ciTitle)
+                      }
+                      # If UIA does not expose ValuePattern, the later task
+                      # list assertion is still the final functional check.
+                      $r.syntheticTaskTyped=(
+                        -not $r.syntheticTaskInputValueAvailable -or
+                        $r.syntheticTaskInputValueMatched)
+                    }
+                    $saveCondition=[System.Windows.Automation.AndCondition]::new(
+                      [System.Windows.Automation.PropertyCondition]::new(
+                        [System.Windows.Automation.AutomationElement]::NameProperty,
+                        "Save new task"),
+                      [System.Windows.Automation.PropertyCondition]::new(
+                        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                        [System.Windows.Automation.ControlType]::Button))
+                    $ciSave=$w.FindFirst(
+                      [System.Windows.Automation.TreeScope]::Descendants,
+                      $saveCondition)
+                    $r.phase="synthetic_save_button"
+                    $r.syntheticTaskSaveFound=($null -ne $ciSave)
+                    if($null -ne $ciSave -and $r.syntheticTaskTyped) {
+                      # Scroll the known save button into view using the
+                      # accessibility provider; never guess hidden coordinates.
+                      $scrollItem=$null
+                      if($ciSave.TryGetCurrentPattern(
+                          [System.Windows.Automation.ScrollItemPattern]::Pattern,
+                          [ref]$scrollItem)) {
+                        $scrollItem.ScrollIntoView()
+                        Start-Sleep -Milliseconds 350
+                      }
+                      $saveBounds=$ciSave.Current.BoundingRectangle
+                      $clickable=(
+                        -not $ciSave.Current.IsOffscreen -and
+                        $saveBounds.Width -ge 40 -and
+                        $saveBounds.Height -ge 20 -and
+                        $saveBounds.Top -ge $workArea.Top -and
+                        $saveBounds.Bottom -le $workArea.Bottom)
+                      if($clickable) {
+                        # The same diagnostic panel can obscure the center of
+                        # the wide Save button. Click the left interior.
+                        $saveX=[int][Math]::Round(
+                          $saveBounds.Left+[Math]::Min(24,$saveBounds.Width/8))
+                        $saveY=[int][Math]::Round(
+                          $saveBounds.Top+$saveBounds.Height/2)
+                        $r.syntheticTaskSaveClickSafe=(
+                          $saveX -lt ($bounds.Right-465))
+                        if($r.syntheticTaskSaveClickSafe) {
+                          Click-CITab $saveX $saveY
+                          $r.phase="synthetic_save_result"
+                          $r.syntheticTaskSaveClicked=$true
+                          # Disk persistence and navigation can complete later
+                          # than the click animation on hosted Windows runners.
+                          for($attempt=0;$attempt -lt 12;$attempt++) {
+                            if(StaticHeadingVisible "Stay productive") {
+                              $r.syntheticTaskReturnedHome=$true
+                              break
+                            }
+                            Start-Sleep -Milliseconds 400
+                          }
+                        }
+                        if($r.syntheticTaskReturnedHome) {
+                          Click-CITab $tasksX $tabsY
+                          if(StaticHeadingVisible "Manage your tasks") {
+                            $syntheticLabel=$w.FindFirst(
+                              [System.Windows.Automation.TreeScope]::Descendants,
+                              [System.Windows.Automation.PropertyCondition]::new(
+                                [System.Windows.Automation.AutomationElement]::NameProperty,
+                                $ciTitle))
+                            if($null -ne $syntheticLabel) {
+                              $labelBounds=$syntheticLabel.Current.BoundingRectangle
+                              $r.syntheticTaskVisibleInTasks=(
+                                $labelBounds.Width -ge 40 -and
+                                $labelBounds.Height -ge 8 -and
+                                -not $syntheticLabel.Current.IsOffscreen)
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
+        }
         }
       }
       if($r.windowFound -and $r.homeHeaderVisible -and
          $r.tasksTabVisible -and $r.settingsTabVisible -and
+         $r.resizeAttempted -and $r.resizeWindowChanged -and
+         $r.resizeHomeVisible -and $r.resizeTabsVisible -and
          $r.navigationAttempted -and $r.tasksScreenVisible -and
          $r.settingsScreenVisible -and $r.homeRoundtripVisible -and
-         $r.createEntryVisible -and $r.createScreenVisible) {
+         $r.createEntryVisible -and $r.createScreenVisible -and
+         $r.syntheticTaskInputFound -and $r.syntheticTaskTyped -and
+         $r.syntheticTaskInputClickSafe -and $r.syntheticTaskSaveClickSafe -and
+         $r.syntheticTaskSaveFound -and $r.syntheticTaskSaveClicked -and
+         $r.syntheticTaskReturnedHome -and $r.syntheticTaskVisibleInTasks) {
         $r.status="PASS"
-        $r.reason="native_navigation_and_create_task_route_visible"
+        $r.reason="native_resize_navigation_and_synthetic_task_saved"
+        $r.phase="complete"
+      } elseif($r.syntheticTaskInputValueAvailable -and
+         -not $r.syntheticTaskInputValueMatched) {
+        $r.reason="synthetic_task_input_text_not_received"
+      } elseif($r.syntheticTaskSaveFound -and
+         -not $r.syntheticTaskSaveClickSafe) {
+        $r.reason="synthetic_save_control_obscured"
+      } elseif($r.createScreenVisible -and -not $r.syntheticTaskVisibleInTasks) {
+        $r.reason="synthetic_task_create_and_save_not_verified"
+      } elseif($r.resizeAttempted -and -not (
+         $r.resizeWindowChanged -and $r.resizeHomeVisible -and
+         $r.resizeTabsVisible)) {
+        $r.reason="native_resize_not_verified"
       } elseif($r.windowFound -and $r.homeHeaderVisible -and
          $r.tasksTabVisible -and $r.settingsTabVisible -and
          $r.homeRoundtripVisible) {

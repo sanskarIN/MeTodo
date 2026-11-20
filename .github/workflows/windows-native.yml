@@ -14,9 +14,12 @@ on:
       - "scripts/prepare-windows-export.mjs"
       - "scripts/windows-native-webview2-smoke.mjs"
       - "scripts/windows-native-uia-probe.ps1"
+      - "scripts/windows-native-restart-persistence.ps1"
       - "tests/windows-viewport-layout.test.ts"
       - "tests/windows-diagnostic-export.test.ts"
+      - "tests/windows-scene-lifecycle.test.ts"
       - "tests/windows-native-runtime-smoke.test.ts"
+      - "tests/task-detail-actions.test.ts"
       - "assets/images/icon.png"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -85,7 +88,25 @@ jobs:
           cargo metadata --locked --manifest-path src-tauri/Cargo.toml --no-deps --format-version 1 | Out-Null
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Verify TypeScript, tests, lint and security audit
+      - name: Parse Windows native UI Automation scripts
+        shell: pwsh
+        run: |
+          foreach ($path in @(
+            'scripts/windows-native-uia-probe.ps1',
+            'scripts/windows-native-restart-persistence.ps1'
+          )) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path -LiteralPath $path).Path,
+              [ref]$tokens, [ref]$parseErrors
+            ) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              throw "Invalid Windows UI Automation probe syntax: $path"
+            }
+          }
+
+      - name: Verify TypeScript, tests and lint
         shell: pwsh
         run: |
           pnpm check
@@ -93,8 +114,6 @@ jobs:
           pnpm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           pnpm lint
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          pnpm audit --prod --audit-level high
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Smoke-test production web UI geometry in Microsoft Edge
@@ -168,3 +187,20 @@ jobs:
             dist/windows-native/WINDOWS_TRIAL_RENDER.png
           if-no-files-found: error
           retention-days: 14
+
+      # The locked Expo toolchain currently contains an upstream unpatched
+      # advisory. Retain a red security gate, but preserve unsigned diagnostic
+      # builds so native Windows renderer investigation can continue. The
+      # artifact is NOT a release candidate while this step fails.
+      - name: Security audit (blocking, after diagnostic artifact)
+        if: ${{ always() && steps.checksums.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          pnpm audit --prod --audit-level high
+          if ($LASTEXITCODE -ne 0) {
+            "SECURITY AUDIT BLOCKED: diagnostic installer is not approved for distribution or stable release." |
+              Out-File $env:GITHUB_STEP_SUMMARY -Append
+            exit $LASTEXITCODE
+          }
+          "Production dependency security audit passed." |
+            Out-File $env:GITHUB_STEP_SUMMARY -Append
