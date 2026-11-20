@@ -197,15 +197,25 @@ try {
   };
   if (nativeUiaPasses(uia)) {
     const initialPid = child?.pid;
+    // Model a real user closing the app window. A forced taskkill can
+    // terminate WebView2 before its local database has flushed to disk,
+    // turning a normal-relaunch test into a crash-durability test.
     const stopped = initialPid && spawnSync(
-      "taskkill", ["/PID", String(initialPid), "/T", "/F"],
-      { windowsHide: true, timeout: 15000, stdio: "ignore" }
+      "powershell.exe",
+      [
+        "-NoProfile", "-NonInteractive", "-Command",
+        "$target=[System.Diagnostics.Process]::GetProcessById(" +
+          Number(initialPid) + ");" +
+          "if (-not $target.CloseMainWindow()) {exit 2};" +
+          "if (-not $target.WaitForExit(15000)) {exit 3}; exit 0"
+      ],
+      { windowsHide: true, timeout: 20000, stdio: "ignore" }
     );
     if (stopped?.status === 0) {
       child = undefined;
-      // Give the WebView2 browser subprocesses time to release their profile
-      // handles. Do not clear app data or create a new user-data directory.
-      await sleep(1200);
+      // The app exits cleanly before the same WebView2 data is reopened.
+      // Never clear storage, kill the profile or choose a new user-data folder.
+      await sleep(1800);
       try {
         child = spawn(exe, [], {
           cwd: resolve("."), windowsHide: true, stdio: "ignore",
@@ -237,7 +247,7 @@ try {
         };
       }
     } else {
-      restart.reason = "initial_process_shutdown_not_verified";
+      restart.reason = "graceful_window_close_not_verified";
     }
   }
 
