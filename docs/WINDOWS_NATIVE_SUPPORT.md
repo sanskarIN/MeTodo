@@ -129,10 +129,11 @@ Windows profile **before** clicking Tasks, Settings, Home and Create Task.
 It records only technical booleans and window dimensions:
 `resizeAttempted`, `resizeWindowChanged`, `resizeHomeVisible`,
 `resizeTabsVisible`, `resizedWidth`, and `resizedHeight`.
-A PASS via the UI Automation fallback requires these resize checks and
-the route navigation checks to succeed. The test does not create private tasks.
-The CDP-only path still validates its own narrower renderer metrics; its
-success must not be interpreted as a completed resize/CRUD acceptance test.
+A PASS requires Windows UI Automation to verify resize, route
+navigation, and fixed synthetic task creation. The optional CDP renderer
+geometry check is advisory only: even if CDP reports a healthy Home heading,
+it cannot bypass the UI Automation functional gate. The synthetic task is
+created only in the disposable CI profile, not in any user's own data.
 
 This remains an unsigned diagnostic build. Real Windows 11 installation,
 task CRUD, backup/restore, close/reopen persistence and offline operation
@@ -223,3 +224,27 @@ screen and avoids treating overlay-intercepted clicks as a storage bug.
 Only applies to the unsigned Windows trial and its disposable CI profile;
 the web-only first stable candidate remains separate. The dependency
 audit still blocks trusted release.
+
+
+## Required native functional gate (20 November 2026)
+
+Previously, the Node smoke script accepted a successful WebView2 DevTools
+(CDP) Home geometry check as a complete PASS and **skipped** the more
+comprehensive PowerShell UI Automation probe. This created a false-green
+path: Home could render while Tasks navigation, resizing or synthetic
+task creation was broken.
+
+The native trial now always performs the fixed, CI-only UIA interaction
+**even when CDP succeeds**. The sole green gate requires real window
+visibility, resize, Home/Tasks/Settings navigation, Create Task access,
+synthetic title entry, save click, navigation back and task visibility.
+A missing or false UIA signal results in NOT VERIFIED and a nonzero exit.
+CDP remains useful, sanitized *supplementary* evidence, never a bypass.
+A regression test evaluates the production pass predicate against missing
+and false signal values. No user tasks are read or included in diagnostic logs.
+
+This closes an evidence gap, not all Windows release blockers. The native
+trial is still unsigned, production dependency auditing remains mandatory,
+and real Windows 11 installation, restart persistence, edit/delete,
+backup/restore and offline-first checks must still pass before a stable
+Windows release can be considered.
