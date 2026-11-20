@@ -13,6 +13,11 @@ const folder = resolve("dist/windows-native");
 mkdirSync(folder, { recursive: true });
 const output = resolve(folder, "NATIVE_WEBVIEW2_SMOKE.txt");
 const port = 17773;
+// Keep WebView2 browser settings identical across both app launches.
+// Tauri documents that differing browser arguments and WebView2 data
+// directory settings are incompatible on Windows.
+const ciWebviewBrowserArgs =
+  "--remote-debugging-address=127.0.0.1 --remote-debugging-port=" + port;
 // Native UI Automation now verifies resize, navigation, and synthetic writes.
 const uiaTimeoutMs = 180000;
 let child;
@@ -133,8 +138,7 @@ try {
     cwd: resolve("."), windowsHide: true, stdio: "ignore",
     env: {
       ...process.env,
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:
-        "--remote-debugging-address=127.0.0.1 --remote-debugging-port=" + port
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: ciWebviewBrowserArgs
     }
   });
 
@@ -219,7 +223,7 @@ try {
       try {
         child = spawn(exe, [], {
           cwd: resolve("."), windowsHide: true, stdio: "ignore",
-          env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: "" }
+          env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: ciWebviewBrowserArgs }
         });
         if (!child.pid || child.pid === initialPid) {
           restart.reason = "relaunch_process_identity_not_verified";
