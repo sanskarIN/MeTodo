@@ -78,69 +78,13 @@ const expression = [
   "})()"
 ].join("");
 
-let ws;
-try {
-  if (process.platform !== "win32") throw new Error("Windows-only native renderer test");
-  const exe = [
-    "src-tauri/target/release/metodo-desktop.exe",
-    "src-tauri/target/release/MeTodo.exe"
-  ].map(candidate => resolve(candidate)).find(candidate => existsSync(candidate));
-  if (!exe) {
-    const folder = resolve("src-tauri/target/release");
-    const names = existsSync(folder) ? readdirSync(folder).filter(name => name.endsWith(".exe")) : [];
-    throw new Error("Compiled Tauri executable unavailable. Other EXEs: " + names.join(", "));
-  }
-  child = spawn(exe, [], {
-    cwd: resolve("."), windowsHide: true, stdio: "ignore",
-    env: {
-      ...process.env,
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:
-        "--remote-debugging-address=127.0.0.1 --remote-debugging-port=" + port
-    }
-  });
-  const page = await target();
-  ws = await connect(page.webSocketDebuggerUrl);
-  let metrics;
-  for (let i = 0; i < 12; i++) {
-    metrics = await evaluate(ws, expression);
-    if (metrics?.headerVisible && metrics.rootHeight >= 300 && metrics.badge) break;
-    await sleep(1200);
-  }
-  const pass = Boolean(metrics?.headerVisible && metrics.rootHeight >= 300 && metrics.badge);
-  const report = "Native Windows WebView2 test: " + (pass ? "PASS" : "FAIL") + "\n" +
-    JSON.stringify(metrics, null, 2) + "\n";
-  writeFileSync(output, report, "utf8");
-  console.log(report);
-  if (!pass) process.exitCode = 1;
-} catch (error) {
-  let uia = { method: "Windows UI Automation", status: "NOT VERIFIED", reason: "not_run" };
-  if (child?.pid && child.exitCode === null) {
-    try {
-      const args = [
-        "-NoProfile", "-NonInteractive",
-        "-File", resolve("scripts/windows-native-uia-probe.ps1"),
-        "-TargetProcessId", String(child.pid),
-      ];
-      if (process.env.GITHUB_ACTIONS === "true") {
-        args.push("-ScreenshotPath", resolve(folder, "WINDOWS_TRIAL_RENDER.png"));
-      }
-      const json = execFileSync("powershell.exe", args, {
-        encoding: "utf8", windowsHide: true, timeout: uiaTimeoutMs,
-        maxBuffer: 512 * 1024,
-      }).trim();
-      uia = JSON.parse(json);
-    } catch (probeError) {
-      // Never log subprocess output, local paths, or task data.
-      const cause = probeError?.code === "ETIMEDOUT"
-        ? "uia_probe_timed_out"
-        : probeError instanceof SyntaxError
-          ? "uia_probe_invalid_json"
-          : "uia_probe_script_failed";
-      uia = { method: "Windows UI Automation", status: "NOT VERIFIED",
-        reason: cause };
-    }
-  }
-  const passed = uia?.status === "PASS" && uia?.windowFound === true &&
+/**
+ * Only Windows UI Automation proves actual native navigation and task writes.
+ * CDP is useful renderer diagnostics, but a healthy Home heading alone is
+ * never sufficient to pass the trial build's functional release gate.
+ */
+function nativeUiaPasses(uia) {
+  return uia?.status === "PASS" && uia?.windowFound === true &&
     uia?.homeHeaderVisible === true && uia?.resizeAttempted === true &&
     uia?.resizeWindowChanged === true && uia?.resizeHomeVisible === true &&
     uia?.resizeTabsVisible === true && uia?.tasksScreenVisible === true &&
@@ -151,14 +95,104 @@ try {
     uia?.syntheticTaskSaveClicked === true &&
     uia?.syntheticTaskReturnedHome === true &&
     uia?.syntheticTaskVisibleInTasks === true;
+}
+
+let ws;
+let cdp = { status: "NOT VERIFIED", reason: "not_started" };
+let uia = { method: "Windows UI Automation", status: "NOT VERIFIED", reason: "not_run" };
+try {
+  // This smoke test creates a fixed synthetic task. Never run it against a
+  // developer's existing profile or any machine outside disposable Windows CI.
+  if (process.platform !== "win32" || process.env.GITHUB_ACTIONS !== "true") {
+    throw new Error("Disposable Windows CI runner required");
+  }
+  const exe = [
+    "src-tauri/target/release/metodo-desktop.exe",
+    "src-tauri/target/release/MeTodo.exe"
+  ].map(candidate => resolve(candidate)).find(candidate => existsSync(candidate));
+  if (!exe) {
+    const releaseDir = resolve("src-tauri/target/release");
+    const names = existsSync(releaseDir) ?
+      readdirSync(releaseDir).filter(name => name.endsWith(".exe")) : [];
+    throw new Error("Compiled Tauri executable unavailable. Other EXEs: " + names.join(", "));
+  }
+  child = spawn(exe, [], {
+    cwd: resolve("."), windowsHide: true, stdio: "ignore",
+    env: {
+      ...process.env,
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:
+        "--remote-debugging-address=127.0.0.1 --remote-debugging-port=" + port
+    }
+  });
+
+  // Advisory CDP geometry check. Its success must not bypass navigation,
+  // native resizing, or synthetic task-save verification by Windows UIA.
+  try {
+    const page = await target();
+    ws = await connect(page.webSocketDebuggerUrl);
+    let metrics;
+    for (let i = 0; i < 12; i++) {
+      metrics = await evaluate(ws, expression);
+      if (metrics?.headerVisible && metrics.rootHeight >= 300 && metrics.badge) break;
+      await sleep(1200);
+    }
+    const ready = Boolean(metrics?.headerVisible &&
+      metrics.rootHeight >= 300 && metrics.badge);
+    cdp = { status: ready ? "PASS" : "NOT VERIFIED", metrics };
+  } catch {
+    // Expected on some hosted Windows runner / WebView2 configurations.
+    // Never log network responses, page URLs, or arbitrary exception strings.
+    cdp = { status: "NOT VERIFIED", reason: "cdp_unavailable_or_unready" };
+  } finally {
+    if (ws) { ws.close(); ws = undefined; }
+  }
+
+  // Required functional gate. Always run even when the CDP renderer probe
+  // succeeded; otherwise a working Home heading could mask broken task CRUD.
+  if (child?.pid && child.exitCode === null) {
+    try {
+      const args = [
+        "-NoProfile", "-NonInteractive",
+        "-File", resolve("scripts/windows-native-uia-probe.ps1"),
+        "-TargetProcessId", String(child.pid),
+        "-ScreenshotPath", resolve(folder, "WINDOWS_TRIAL_RENDER.png"),
+      ];
+      const json = execFileSync("powershell.exe", args, {
+        encoding: "utf8", windowsHide: true, timeout: uiaTimeoutMs,
+        maxBuffer: 512 * 1024,
+      }).trim();
+      uia = JSON.parse(json);
+    } catch (probeError) {
+      const reason = probeError?.code === "ETIMEDOUT"
+        ? "uia_probe_timed_out"
+        : probeError instanceof SyntaxError
+          ? "uia_probe_invalid_json"
+          : "uia_probe_script_failed";
+      uia = { method: "Windows UI Automation", status: "NOT VERIFIED", reason };
+    }
+  } else {
+    uia.reason = "native_process_unavailable";
+  }
+
+  const passed = nativeUiaPasses(uia);
   const report = "Native Windows WebView2 test: " +
-    (passed ? "PASS (Windows UI Automation fallback)" : "NOT VERIFIED") + "\n" +
-    "CDP: " + String(error?.message || error) + "\n" +
+    (passed ? "PASS (Windows UI Automation required)" : "NOT VERIFIED") + "\n" +
+    "CDP: " + JSON.stringify(cdp) + "\n" +
     "UIA: " + JSON.stringify(uia) + "\n";
   writeFileSync(output, report, "utf8");
   if (passed) console.log(report);
   else { console.error(report); process.exitCode = 1; }
+} catch {
+  // Do not expose arbitrary launch errors or paths in uploaded diagnostics.
+  const report = "Native Windows WebView2 test: NOT VERIFIED\n" +
+    "Reason: native_startup_or_probe_unavailable\n";
+  writeFileSync(output, report, "utf8");
+  console.error(report);
+  process.exitCode = 1;
 } finally {
   if (ws) ws.close();
-  if (child?.pid) spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true });
+  if (child?.pid) {
+    spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"],
+      { windowsHide: true });
+  }
 }
