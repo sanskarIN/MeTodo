@@ -162,7 +162,9 @@ describe("Windows native runtime verification", () => {
     const second = readFileSync("scripts/windows-native-restart-persistence.ps1", "utf8");
     expect(workflow).toContain('"scripts/windows-native-restart-persistence.ps1"');
     expect(probe).toContain('resolve("scripts/windows-native-restart-persistence.ps1")');
-    expect(probe).toContain('"taskkill", ["/PID", String(initialPid), "/T", "/F"]');
+    expect(probe).toContain('$target.CloseMainWindow()');
+    expect(probe).toContain('$target.WaitForExit(15000)');
+    expect(probe).toContain('"graceful_window_close_not_verified"');
     expect(probe).toContain("child.pid === initialPid");
     expect(probe).toContain("const passed = nativeUiaPasses(uia) && nativeRestartPasses(restart);");
     expect(probe).toContain('"RESTART: " + JSON.stringify(restart)');
@@ -170,8 +172,12 @@ describe("Windows native runtime verification", () => {
     expect(second).toContain("Get-Process -Id $TargetProcessId");
     expect(second).toContain('Get-CIVisibleLabel "Stay productive"');
     expect(second).toContain('Get-CIVisibleLabel "Manage your tasks"');
-    expect(second).toContain('Get-CIVisibleLabel "MeTodo CI Smoke Task"');
-    expect(second).toContain('$r.syntheticTaskPersistedAfterRestart=$true');
+    expect(second).toContain('"MeTodo CI Smoke Task"');
+    expect(second).toContain('$r.syntheticTaskFoundInTreeAfterRestart=$true');
+    expect(second).toContain("syntheticTaskInViewportAfterRestart");
+    expect(second).toContain("emptyTasksMessageAfterRestart");
+    expect(second).toContain("savedTasksErrorAfterRestart");
+    expect(second).toContain('$r.syntheticTaskPersistedAfterRestart=(');
     expect(second).not.toMatch(/localStorage|AsyncStorage|metodo_tasks|metodo_settings|Get-Content|Remove-Item/);
 
     const gate = probe.match(/function nativeRestartPasses\(restart\) \{[\s\S]*?\n\}/)?.[0];
